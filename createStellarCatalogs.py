@@ -153,10 +153,10 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
 
     if plots == True:
         plt.figure(figsize=(10,10));
-        plt.semilogy(dr25GaiaStellar.teff, dr25GaiaStellar["R*"], ".k", ms=3, alpha=0.5)
-        plt.semilogy(cleanDr25GaiaStellar.teff, cleanDr25GaiaStellar["R*"], ".r", ms=3, alpha=0.5)
-        plt.semilogy(binaryDr25GaiaStellar.teff, binaryDr25GaiaStellar["R*"], ".b", ms=3, alpha=0.5)
-        plt.semilogy(evolvedDr25GaiaStellar.teff, evolvedDr25GaiaStellar["R*"], ".g", ms=3, alpha=0.5)
+        plt.semilogy(dr25GaiaStellar.teff, dr25GaiaStellar["R*"], ".k", ms=3, alpha=0.5, rasterized = True)
+        plt.semilogy(cleanDr25GaiaStellar.teff, cleanDr25GaiaStellar["R*"], ".r", ms=3, alpha=0.5, rasterized = True)
+        plt.semilogy(binaryDr25GaiaStellar.teff, binaryDr25GaiaStellar["R*"], ".b", ms=3, alpha=0.5, rasterized = True)
+        plt.semilogy(evolvedDr25GaiaStellar.teff, evolvedDr25GaiaStellar["R*"], ".g", ms=3, alpha=0.5, rasterized = True)
         plt.semilogy([9000,3000], [1.35,1.35], linestyle='--', linewidth=1, alpha=0.5)
         plt.xlim(9500, 2500)
         plt.legend(("all DR25/Gaia stars", "cleaned DR25/Gaia stars", "binary DR25/Gaia stars", "evolved DR25/Gaia stars"));
