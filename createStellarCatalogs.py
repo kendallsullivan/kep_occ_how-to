@@ -7,7 +7,6 @@ by Kendall Sullivan (find my contact info at kendallsullivan.github.io).
 import numpy as np
 import requests
 import pandas as pd
-from cStringIO import StringIO
 import matplotlib.pyplot as plt
 from scipy.interpolate import griddata
 import sys, getopt, os
@@ -15,33 +14,8 @@ from astropy.io import ascii
 
 def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 0.1, age_upper = 19.5):
 
-    # Import the base DR25 catalog from the exoplanet archive
-    # download the DR25 stellar properties if it's not already in stellarCatalogs/
-    if False:
-        urlstellar = "https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=q1_q17_dr25_stellar&select=*"
-
-        r = requests.get(urlstellar)
-        if r.status_code != requests.codes.ok:
-            r.raise_for_status()
-        fh = StringIO(r.content)
-        dr25Stellar = pd.read_csv(fh, dtype={"st_quarters":str})
-        dr25Stellar.to_csv("stellarCatalogs/dr25_stellar_archive.txt", index=False)
-    else:
-        dr25Stellar = pd.read_csv("stellarCatalogs/dr25_stellar_archive.txt", dtype={"st_quarters":str})
-
-
-    # Import the DR25 supplemental catalog
-    # download the DR25 supplemental stellar properties if it's not already in stellarCatalogs/
-    if False:
-        urlsupp = "https://exoplanetarchive.ipac.caltech.edu/cgi-bin/nstedAPI/nph-nstedAPI?table=q1_q17_dr25_supp_stellar&select=*"
-        r = requests.get(urlsupp)
-        if r.status_code != requests.codes.ok:
-            r.raise_for_status()
-        fh = StringIO(r.content)
-        dr25StellarSup = pd.read_csv(fh, dtype={"st_quarters":str})
-        dr25StellarSup.to_csv("stellarCatalogs/dr25_stellar_supp_archive.txt", index=False)
-    else:
-        dr25StellarSup = pd.read_csv("stellarCatalogs/dr25_stellar_supp_archive.txt", dtype={"st_quarters":str})
+    dr25Stellar = pd.read_csv("stellarCatalogs/dr25_stellar_archive.txt", dtype={"st_quarters":str})
+    dr25StellarSup = pd.read_csv("stellarCatalogs/dr25_stellar_supp_archive.txt", dtype={"st_quarters":str})
 
 
     # Merge the two catalogs.  The supplemental catalog has fewer entries, so we have to be careful about the merge. 
@@ -105,13 +79,14 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     # read the published table from Berger et al. 2018
     gaiaUpdates = ascii.read("stellarCatalogs/apj_table1_published.txt")
     berger2020 = ascii.read("stellarCatalogs/berger2020.txt")
+    berger2020 = berger2020['KIC', 'Age', 'f_Age', 'e_Age', 'E_Age']
 
     gaiaUpdatesPd = gaiaUpdates.to_pandas();
     berger2020Pd = berger2020.to_pandas();
 
     dr25GaiaStellar_merge1 = pd.merge(dr25StellarFullMerged, gaiaUpdatesPd, left_on="kepid", right_on="KIC", how="inner")
 
-    dr25GaiaStellar = pd.merge(dr25GaiaStellar_merge1, berger2020Pd['KIC', 'Age', 'f_Age', 'e_Age', 'E_age'], left_on="kepid", right_on="KIC", how="inner")
+    dr25GaiaStellar = pd.merge(dr25GaiaStellar_merge1, berger2020Pd, left_on="kepid", right_on="KIC", how="inner")
 
     # copy the dr25 distance and radius to renamed columns in case anyone wants to compare
     dr25GaiaStellar["dist_DR25"] = dr25GaiaStellar["dist"]
@@ -143,7 +118,7 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
 
 
     #pick out the desired age range as specified by the function call:
-    dr25GaiaStellar = dr25GaiaStellar[np.where((dr25GaiaStellar['Age'] > age_lower) & (dr25GaiaStellar['Age'] < age_upper) & (dr25GaiaStellar['f_Age'] != '*'))]
+    dr25GaiaStellar = dr25GaiaStellar[(dr25GaiaStellar['Age'] > age_lower) & (dr25GaiaStellar['Age'] < age_upper) & (dr25GaiaStellar['f_Age'] != '*')]
     if verbose == True:
         print('In the desired age range of {}-{} Gyr, there are {} entries after the initial cross-match between Berger+2018, Berger+2020, and the KIC.'\
             .format(age_lower, age_upper, len(dr25GaiaStellar)))
@@ -252,26 +227,27 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     # G: 5300 <= T < 6000<br>
     # F: 6000 <= T < 7300<br>
 
+    spt = spt.lower()
     spt_tables = {}
 
-    if 'f' in spt.lower():
+    if 'f' in spt:
         cleanDr25GaiaStellarF = cleanDr25GaiaStellar[(cleanDr25GaiaStellar.teff >= 6000)&(cleanDr25GaiaStellar.teff < 7300)]
         spt_tables['f'] = cleanDr25GaiaStellarF
         if verbose == True:
             print(str(len(cleanDr25GaiaStellarF)) + " F targets")
-    if 'g' in spt.lower():
+    if 'g' in spt:
         cleanDr25GaiaStellarG = cleanDr25GaiaStellar[(cleanDr25GaiaStellar.teff >= 5300)&(cleanDr25GaiaStellar.teff < 6000)]
         spt_tables['g'] = cleanDr25GaiaStellarG
         if verbose == True:
             print(str(len(cleanDr25GaiaStellarG)) + " G targets")
 
-    if 'k' in spt.lower():
+    if 'k' in spt:
         cleanDr25GaiaStellarK = cleanDr25GaiaStellar[(cleanDr25GaiaStellar.teff >= 3900)&(cleanDr25GaiaStellar.teff < 5300)]
         spt_tables['k'] = cleanDr25GaiaStellarK
         if verbose == True:
             print(str(len(cleanDr25GaiaStellarK)) + " K targets")
 
-    if 'm' in spt.lower():
+    if 'm' in spt:
         cleanDr25GaiaStellarM = cleanDr25GaiaStellar[(cleanDr25GaiaStellar.teff >= 2400)&(cleanDr25GaiaStellar.teff < 3900)]
         spt_tables['m'] = cleanDr25GaiaStellarM
         if verbose == True:
@@ -287,33 +263,6 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
 
     # always save the GK catalog
     writeTable.to_csv("stellarCatalogs/" + catalogHeader + "_{}.txt".format(spt.upper()), index=False)
-
-
-    if plots == True:
-        plt.figure(figsize=(10,10));
-        plt.semilogy(dr25GaiaStellar.teff, dr25GaiaStellar["R*"], ".k", ms=3, alpha=0.5)
-        plt.semilogy(cleanDr25GaiaStellarG.teff, cleanDr25GaiaStellarG["R*"], ".r", ms=3, alpha=0.5)
-        plt.semilogy(cleanDr25GaiaStellarK.teff, cleanDr25GaiaStellarK["R*"], ".g", ms=3, alpha=0.5)
-        plt.semilogy(cleanDr25GaiaStellarM.teff, cleanDr25GaiaStellarM["R*"], ".b", ms=3, alpha=0.5)
-        plt.semilogy([9000,3000], [1.35,1.35], linestyle='--', linewidth=1, alpha=0.5)
-        plt.xlim(9500, 2500)
-        plt.legend(("all DR25/Gaia stars", "cleaned G stars", "cleaned K stars", "cleaned M stars"));
-        plt.ylabel("$radius$");
-        plt.xlabel(r"$T_\mathrm{eff}$");
-        plt.savefig(savepath + "HRD.pdf")
-        plt.close()
-
-        plt.figure(figsize=(10,10));
-        plt.plot(dr25GaiaStellar.teff, dr25GaiaStellar.logg, ".k", ms=3, alpha=0.5)
-        plt.plot(cleanDr25GaiaStellarG.teff, cleanDr25GaiaStellarG.logg, ".r", ms=3, alpha=0.5)
-        plt.plot(cleanDr25GaiaStellarK.teff, cleanDr25GaiaStellarK.logg, ".g", ms=3, alpha=0.5)
-        plt.plot(cleanDr25GaiaStellarM.teff, cleanDr25GaiaStellarM.logg, ".b", ms=3, alpha=0.5)
-        plt.xlim(9500, 2500)
-        plt.legend(("all DR25/Gaia stars", "cleaned G stars", "cleaned K stars", "cleaned M stars"));
-        plt.ylabel("$logg$");
-        plt.xlabel(r"$T_\mathrm{eff}$");
-        plt.savefig(savepath + 'keel_diagram.pdf')
-        plt.close()
 
     return
 
