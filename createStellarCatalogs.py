@@ -4,16 +4,34 @@ Make a stellar catalog for computing occurrence rates. Modified from Steve Bryso
 by Kendall Sullivan (find my contact info at kendallsullivan.github.io).
 '''
 
+#import statements
 import numpy as np
-import requests
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.interpolate import griddata
 import sys, getopt, os
 from astropy.io import ascii
 
+# main function -- separated from main mostly for convenience and organization
 def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 0.1, age_upper = 19.5):
+    '''
+    Make a stellar catalog for subsequent occurrence rate calculations.
 
+    dependencies:
+    requires that the Kepler DR25 stellar archive and the stellar supplemental properties are both downloaded in the stellarCatalogs directory.
+
+    inputs:
+    savepath (str): the full path (can include ~) to the plot save location -- the stellar catalog will be saved in a subdirectory of the savepath called stellarCatalogs/
+    plots (bool): make diagnostic plots?
+    verbose (bool): give extra output?
+    spt (str): a string of the desired spectral types to include in the catalog. Accepted values are FGKM.
+    age_lower (float): the lower limit of ages (pulled from the isochrone ages of Berger+2020) in Gyr. Accepted values are anything >= 0.1 Gyr.
+    age_upper (float): the upper limit of ages (pulled from the isochrone ages of Berger+2020) in Gyr. Accepted values are anything <= 19.5 Gyr.
+
+    outputs:
+    null - just saves a stellar catalog
+    '''
+
+    # read in the Kepler stellar properties catalogs to pandas
     dr25Stellar = pd.read_csv("stellarCatalogs/dr25_stellar_archive.txt", dtype={"st_quarters":str})
     dr25StellarSup = pd.read_csv("stellarCatalogs/dr25_stellar_supp_archive.txt", dtype={"st_quarters":str})
 
@@ -50,7 +68,7 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     if verbose == True:
         print("the merged catalog has " + str(len(mergedDr25Stellar)) + " entries")
 
-
+    # save the merged stellar catalogs 
     mergedDr25Stellar.to_csv("stellarCatalogs/dr25_stellar_updated_feh.txt", index=False)
 
 
@@ -65,9 +83,9 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     dr25StellarFullMerged = pd.concat([mergedDr25Stellar, dr25StellarNoSup])
 
     if verbose == True:
-        # print(list(stellar_full_merged))
         print("the final catalog has " + str(len(dr25StellarFullMerged)) + " entries")
 
+    # save the merged table
     dr25StellarFullMerged.to_csv("stellarCatalogs/dr25_stellar_updated_feh_all.txt", index=False)
 
 
@@ -78,14 +96,19 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
 
     # read the published table from Berger et al. 2018
     gaiaUpdates = ascii.read("stellarCatalogs/apj_table1_published.txt")
+    # read in the published table from Berger et al. 2020
     berger2020 = ascii.read("stellarCatalogs/berger2020.txt")
+    #pick out only the columns we want from the 2020 paper: ages and age flags, plus the KIC numbers for cross-matching
     berger2020 = berger2020['KIC', 'Age', 'f_Age', 'e_Age', 'E_Age']
 
+    # change the ascii astropy tables to pandas dataframes
     gaiaUpdatesPd = gaiaUpdates.to_pandas();
     berger2020Pd = berger2020.to_pandas();
 
+    # merge the kepler table with the Berger et al. 2018 table 
     dr25GaiaStellar_merge1 = pd.merge(dr25StellarFullMerged, gaiaUpdatesPd, left_on="kepid", right_on="KIC", how="inner")
 
+    # now merge with the ages from Berger et al. 2020
     dr25GaiaStellar = pd.merge(dr25GaiaStellar_merge1, berger2020Pd, left_on="kepid", right_on="KIC", how="inner")
 
     # copy the dr25 distance and radius to renamed columns in case anyone wants to compare
@@ -111,15 +134,17 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     dr25GaiaStellar["radius_err2"] = -dr25GaiaStellar["e_R*"]
 
     if verbose == True:
-        # we'll leave the Gaia columns in place because they have different names
         print("the Gaia/Berger catalog has " + str(len(dr25GaiaStellar)) + " entries")
 
+    # save the Berger/Gaia/KIC crossmatch
     dr25GaiaStellar.to_csv("stellarCatalogs/dr25_stellar_supp_gaia.txt", index=False)
 
 
     #pick out the desired age range as specified by the function call:
     dr25GaiaStellar = dr25GaiaStellar[(dr25GaiaStellar['Age'] > age_lower) & (dr25GaiaStellar['Age'] < age_upper) & (dr25GaiaStellar['f_Age'] != '*')]
+
     if verbose == True:
+        # print the number of entries in the desired age range
         print('In the desired age range of {}-{} Gyr, there are {} entries after the initial cross-match between Berger+2018, Berger+2020, and the KIC.'\
             .format(age_lower, age_upper, len(dr25GaiaStellar)))
 
@@ -127,6 +152,7 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     #We now apply several cuts to restrict our occurrence rate analysis to targets for which we have reliable completeness information, 
     #following the guidelines in Section 3.6 of https://exoplanetarchive.ipac.caltech.edu/docs/KSCI-19111-002.pdf.
 
+    # initialize a new table
     cleanDr25GaiaStellar = dr25GaiaStellar
 
 
@@ -150,7 +176,7 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     if verbose == True: 
         print(str(len(cleanDr25GaiaStellar)) + " entries after removing marked evolved stars")
 
-
+    # make a plot of the sample
     if plots == True:
         plt.figure(figsize=(10,10));
         plt.semilogy(dr25GaiaStellar.teff, dr25GaiaStellar["R*"], ".k", ms=3, alpha=0.5, rasterized = True)
@@ -170,10 +196,10 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     if verbose == True:
         print(str(len(cleanDr25GaiaStellar)) + " entries after removing noisy targets")
 
+    # make a radius cut 
     cleanDr25GaiaStellar = cleanDr25GaiaStellar[dr25GaiaStellar.radius <= 1.25]
     if verbose == True:
         print(str(len(cleanDr25GaiaStellar)) + " entries after removing R > 1.25 targets")
-
 
     # Next we remove stars with nan limb darkening coefficients.
     cleanDr25GaiaStellar = cleanDr25GaiaStellar[~np.isnan(dr25GaiaStellar.limbdark_coeff1)]
@@ -183,12 +209,10 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     if verbose == True:
         print(str(len(cleanDr25GaiaStellar)) + " entries after removing Nan limb darkening targets")
 
-
     # Next we remove stars with duty cycle = nan.
     cleanDr25GaiaStellar = cleanDr25GaiaStellar[~np.isnan(dr25GaiaStellar.dutycycle)]
     if verbose == True:
        print(str(len(cleanDr25GaiaStellar)) + " entries after removing Nan dutycycle targets")
-
 
     # Next we remove stars that have had a drop in duty cycle > 30% due to the removal of transits. (10% in KSCI)
     dutyCycleChange = cleanDr25GaiaStellar.dutycycle - cleanDr25GaiaStellar.dutycycle_post
@@ -196,12 +220,10 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     if verbose == True:
         print(str(len(cleanDr25GaiaStellar)) + " entries after removing duty cycle drops > 0.3")
 
-
     # Next we remove stars that have duty cycles < 0.6.
     cleanDr25GaiaStellar = cleanDr25GaiaStellar[cleanDr25GaiaStellar.dutycycle >= 0.6]
     if verbose == True:
         print(str(len(cleanDr25GaiaStellar)) + " entries after removing after removing stars with duty cycle < 0.6")
-
 
     # Next we remove stars with data span < 1000
     cleanDr25GaiaStellar = cleanDr25GaiaStellar[cleanDr25GaiaStellar.dataspan >= 1000]
@@ -218,17 +240,18 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
 
     cleanDr25GaiaStellar.to_csv("stellarCatalogs/" + catalogHeader + "_all.txt", index=False)
 
-
     # This produces the clean master list dr25_stellar_supp_gaia_clean.txt from which we will extract specific spectral types.
     # We extract desired spectral types using the teff boundaries from Pecaut and Mamajek 2013 
     # http://iopscience.iop.org/article/10.1088/0067-0049/208/1/9/meta;jsessionid=698F3A9F5272B070DC62876C1764BFDB.c1#apjs480616s3:
-    # M: 2400 <= T < 3900  <br>
-    # K: 3900 <= T < 5300<br>
-    # G: 5300 <= T < 6000<br>
-    # F: 6000 <= T < 7300<br>
+    # M: 2400 <= T < 3900
+    # K: 3900 <= T < 5300
+    # G: 5300 <= T < 6000
+    # F: 6000 <= T < 7300
 
+    # initialize a spectral type table dictionary for concatenating later on
     spt_tables = {}
 
+    # pick out the appropriate temperatures for each spectral type table
     if 'f' in spt:
         cleanDr25GaiaStellarF = cleanDr25GaiaStellar[(cleanDr25GaiaStellar.teff >= 6000)&(cleanDr25GaiaStellar.teff < 7300)]
         spt_tables['f'] = cleanDr25GaiaStellarF
@@ -252,6 +275,7 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
         if verbose == True:
             print(str(len(cleanDr25GaiaStellarM)) + " M targets")
 
+    # if the request is for more than one spectral type, add them together 
     if len(spt) > 1:
         tab_to_write = [spt_tables[spt[n]] for n in range(len(spt))]
         writeTable = pd.concat(tab_to_write, ignore_index = True)
@@ -259,20 +283,20 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     else:
         writeTable = spt_tables[spt]
 
-
-    # always save the GK catalog
+    # save the appropriate stellar table
     writeTable.to_csv("stellarCatalogs/" + catalogHeader + "_{}.txt".format(spt.upper()), index=False)
 
     return
 
 def main(argv):
-
+    # set up a try/except for reading in initialization requirements
     try:
         argument_list = argv[1:]
-        short_options = 'p:v:s:t:y:o:' #plots, verbose, savepath for files, spectral types to include, lower age limit, upper age limit
+        short_options = 'p:v:s:t:y:o:' #plots y/n, verbose y/n, savepath for files, spectral types to include, lower age limit, upper age limit
         long_options = 'plots:verbose:savepath:spt:age_lower:age_upper:' 
         arguments, values = getopt.getopt(argument_list, short_options, long_options)
 
+        # get out the various results of the keywords
         plots = arguments[0][1]
         verbose = arguments[1][1]
         savepath = arguments[2][1] + '/'
@@ -280,7 +304,7 @@ def main(argv):
         lower_age_limit = float(arguments[4][1])
         upper_age_limit = float(arguments[5][1])
 
-
+        # do the weird thing you need to do when you don't explicitly cast the arguments results as booleans
         if 'f' in plots.lower():
             plots = False
         else:
@@ -292,6 +316,8 @@ def main(argv):
             verbose = True
 
     except:
+        # if it throws an exception because there is a missing command-line argument, or no command-line arguments are given
+        # then default to some appropriate values and send a message.
         print('No inputs given, running with default settings: plots = True, verbose = True, stellar spectral types of GK only, all ages.\n \
             Savepath defaults to current working directory for plots. Files are saved in the stellarCatalogs subdirectory, \n \
             which must be contained in your current working directory. If stellarCatalogs did not exist, it has been created.')
@@ -303,24 +329,30 @@ def main(argv):
         upper_age_limit = 19.5
         savepath = os.getcwd()
 
+    # check the spectral type inputs are valid
     test_spt = [s not in 'fgkm' for s in spt]
 
+    # if they are not, throw an error and exit
     if any([s == True for s in test_spt]):
         print('Invalid spectral type entered! Please enter some combination of FGKM (case-insensitive). Terminating program.')
         sys.exit(1)
 
+    # make sure the ages are in a valid range
     if not (lower_age_limit >= 0.1 and upper_age_limit <= 19.5):
         print('Invalid age range: ages must be between 0.1 Gyr and 19.5 Gyr. Terminating program.')
         sys.exit(1)
 
+    # make a stellarCatalogs directory if it doesn't already exist
     try:
         os.mkdir('stellarCatalogs')
     except:
         pass;
 
+    # print out the running statement 
     print('Making a catalog with the following settings: plots = {}, verbose = {}, savepath = {}, spectral types = {}, \
         lower age limit = {} Gyr, upper age limit = {} Gyr'.format(plots, verbose, savepath, spt, lower_age_limit, upper_age_limit))
 
+    # now actually call the catalog function 
     makeCatalog(savepath, plots, verbose, spt, lower_age_limit, upper_age_limit)
 
     return
