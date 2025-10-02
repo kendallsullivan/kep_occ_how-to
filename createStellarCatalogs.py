@@ -227,7 +227,6 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
     # G: 5300 <= T < 6000<br>
     # F: 6000 <= T < 7300<br>
 
-    spt = spt.lower()
     spt_tables = {}
 
     if 'f' in spt:
@@ -277,9 +276,10 @@ def main(argv):
         plots = arguments[0][1]
         verbose = arguments[1][1]
         savepath = arguments[2][1] + '/'
-        spt = arguments[3][1]
+        spt = arguments[3][1].lower()
         lower_age_limit = float(arguments[4][1])
         upper_age_limit = float(arguments[5][1])
+
 
         if 'f' in plots.lower():
             plots = False
@@ -291,35 +291,37 @@ def main(argv):
         else:
             verbose = True
 
-        if not ('f' in spt.lower() or 'g' in spt.lower() or 'k' in spt.lower() or 'm' in spt.lower()):
-            print('Invalid spectral type entered! Please enter some combination of FGKM (case-insensitive). Terminating program.')
-            sys.exit(1)
-
-        if lower_age_limit < 0.1 or upper_age_limit > 19.5:
-            print('Invalid age range: ages must be between 0.1 Gyr and 19.5 Gyr. Terminating program.')
-            sys.exit(1)
-
-        try:
-            os.mkdir('stellarCatalogs')
-        except:
-            pass;
-
-        print('Making a catalog with the following settings: plots = {}, verbose = {}, savepath = {}, spectral types = {}, \
-            lower age limit = {} Gyr, upper age limit = {} Gyr'.format(plots, verbose, savepath, spt, lower_age_limit, upper_age_limit))
-
-        makeCatalog(savepath, plots, verbose, spt, lower_age_limit, upper_age_limit)
-
     except:
-
-        try: 
-            os.mkdir('stellarCatalogs')
-        except:
-            pass;
-
         print('No inputs given, running with default settings: plots = True, verbose = True, stellar spectral types of GK only, all ages.\n \
             Savepath defaults to current working directory for plots. Files are saved in the stellarCatalogs subdirectory, \n \
             which must be contained in your current working directory. If stellarCatalogs did not exist, it has been created.')
-        makeCatalog(os.getcwd() + '/')
+
+        plots = True
+        verbose = True
+        spt = 'GK'.lower()
+        lower_age_limit = 0.1
+        upper_age_limit = 19.5
+        savepath = os.getcwd()
+
+    test_spt = [s not in 'fgkm' for s in spt]
+
+    if any([s == True for s in test_spt]):
+        print('Invalid spectral type entered! Please enter some combination of FGKM (case-insensitive). Terminating program.')
+        sys.exit(1)
+
+    if not (lower_age_limit >= 0.1 and upper_age_limit <= 19.5):
+        print('Invalid age range: ages must be between 0.1 Gyr and 19.5 Gyr. Terminating program.')
+        sys.exit(1)
+
+    try:
+        os.mkdir('stellarCatalogs')
+    except:
+        pass;
+
+    print('Making a catalog with the following settings: plots = {}, verbose = {}, savepath = {}, spectral types = {}, \
+        lower age limit = {} Gyr, upper age limit = {} Gyr'.format(plots, verbose, savepath, spt, lower_age_limit, upper_age_limit))
+
+    makeCatalog(savepath, plots, verbose, spt, lower_age_limit, upper_age_limit)
 
     return
 
