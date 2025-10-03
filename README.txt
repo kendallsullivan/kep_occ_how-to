@@ -1,11 +1,11 @@
 To do:
 
 -- convert Steve's jupyter notebooks into python scripts
-	-- createStellarCatalogs -- needs testing but outline is done
-	-- makePlanetInput
+	-- createStellarCatalogs -- done!
+	-- binomailVettingCompleteness
 	-- binomialFPEffectiveness
 	-- binomialObsFPRate
-	-- binomailVettingCompleteness
+	-- makePlanetInput
 	-- NOT computeOccurrence -- this should switch to Anne's code
 	-- occurrence (this is my own Jupyter notebook with the bones adapted from Anne)
 

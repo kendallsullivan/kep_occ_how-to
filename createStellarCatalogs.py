@@ -10,8 +10,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import sys, getopt, os
 from astropy.io import ascii
+from setuptools._distutils.util import strtobool
 
-# main function -- separated from main mostly for convenience and organization
+# primary function -- separated from main() mostly for convenience and organization
 def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 0.1, age_upper = 19.5):
     '''
     Make a stellar catalog for subsequent occurrence rate calculations.
@@ -21,14 +22,14 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
 
     inputs:
     savepath (str): the full path (can include ~) to the plot save location -- the stellar catalog will be saved in a subdirectory of the savepath called stellarCatalogs/
-    plots (bool): make diagnostic plots?
-    verbose (bool): give extra output?
-    spt (str): a string of the desired spectral types to include in the catalog. Accepted values are FGKM.
-    age_lower (float): the lower limit of ages (pulled from the isochrone ages of Berger+2020) in Gyr. Accepted values are anything >= 0.1 Gyr.
-    age_upper (float): the upper limit of ages (pulled from the isochrone ages of Berger+2020) in Gyr. Accepted values are anything <= 19.5 Gyr.
+    plots (bool): make diagnostic plots? Default is True.
+    verbose (bool): give extra output? Default is True.
+    spt (str): a string of the desired spectral types to include in the catalog. Accepted values are FGKM. Default is GK.
+    age_lower (float): the lower limit of ages (pulled from the isochrone ages of Berger+2020) in Gyr. Accepted values are anything >= 0.1 Gyr. Default is 0.1 Gyr.
+    age_upper (float): the upper limit of ages (pulled from the isochrone ages of Berger+2020) in Gyr. Accepted values are anything <= 19.5 Gyr. Default is 19.5 Gyr.
 
-    outputs:
-    null - just saves a stellar catalog
+    returns:
+    null - just saves a stellar catalog in-function.
     '''
 
     # read in the Kepler stellar properties catalogs to pandas
@@ -154,7 +155,6 @@ def makeCatalog(savepath, plots = True, verbose = True, spt = 'GK', age_lower = 
 
     # initialize a new table
     cleanDr25GaiaStellar = dr25GaiaStellar
-
 
     # First we remove the stars marked binary due to Gaia radius (Bin = 1 or 3) or evolved (Evol > 0). 
     #We do not remove targets with AO companions (Bin = 2) because the target star population was not uniformly surveyed with AO.  
@@ -297,23 +297,14 @@ def main(argv):
         arguments, values = getopt.getopt(argument_list, short_options, long_options)
 
         # get out the various results of the keywords
-        plots = arguments[0][1]
-        verbose = arguments[1][1]
+        plots = strtobool(str(arguments[0][1]))
+        verbose = strtobool(str(arguments[1][1]))
         savepath = arguments[2][1] + '/'
         spt = arguments[3][1].lower()
         lower_age_limit = float(arguments[4][1])
         upper_age_limit = float(arguments[5][1])
 
-        # do the weird thing you need to do when you don't explicitly cast the arguments results as booleans
-        if 'f' in plots.lower():
-            plots = False
-        else:
-            plots = True
-
-        if 'f' in verbose.lower():
-            verbose = False
-        else:
-            verbose = True
+        print(plots, type(plots))
 
     except:
         # if it throws an exception because there is a missing command-line argument, or no command-line arguments are given
@@ -340,6 +331,10 @@ def main(argv):
     # make sure the ages are in a valid range
     if not (lower_age_limit >= 0.1 and upper_age_limit <= 19.5):
         print('Invalid age range: ages must be between 0.1 Gyr and 19.5 Gyr. Terminating program.')
+        sys.exit(1)
+
+    if not (lower_age_limit < upper_age_limit):
+        print('Invalid age range: lower age limit must be less than upper age limit. Terminating program.')
         sys.exit(1)
 
     # make a stellarCatalogs directory if it doesn't already exist
