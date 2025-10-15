@@ -2,7 +2,8 @@ To do:
 
 -- convert Steve's jupyter notebooks into python scripts
 	-- createStellarCatalogs -- done!
-	-- binomailVettingCompleteness
+	-- binomailVettingCompleteness - written and commented but not tested
+	-- various codes for running KeplerPORTs - check the binary parallelization for this
 	-- binomialFPEffectiveness
 	-- binomialObsFPRate
 	-- makePlanetInput

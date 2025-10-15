@@ -14,29 +14,43 @@ import scipy.optimize as op
 import pickle
 import corner
 import emcee
-from mpl_toolkits.mplot3d import Axes3D  # noqa: F401 unused import
 from matplotlib import cm
+import os.path
+import pickle
+
 
 
 def drawHeatMap(dataArray, imageSize, x, y, nData=[], colorBarLabel="", textOn=True, forceInt=True):
+    '''
+    Make a heatmap plot for assessing model fits and residuals.
+    Assumes evenly spaced x and y arrays.
+    '''
+    # define the cell sizes based on the array spacing
     dx = x[(1,0)] - x[(0,0)];
     dy = y[(0,1)] - y[(0,0)];
+    # define the extent of the cells
     extent = [x[(0,0)], x[(-1,0)]+dx,y[(0,0)],y[(0,-1)]+dy];
 
+    # initialize the figure with the requested image size
     plt.figure(figsize=imageSize);
     ax = plt.gca()
 
+    # plot the pre-celled data
     da = np.transpose(dataArray);
     im = ax.imshow(da, extent = extent, origin='lower', cmap="Greys");
+    # define the aspect ratio
     ax.set_aspect(10);
     
+    # define where we'll enter text versus an empty cell
     if len(nData) == 0:
         nData = np.ones(dataArray.shape)
 
+    # define the array for adding text
     arrayShape = da.shape;
     minda = np.min(da)
     maxda = np.max(da)
     daRange = maxda - minda;
+    # this whole block of code just adds text to the figure with values for how many entries are in each cell
     for i in range(arrayShape[0]):
         for j in range(arrayShape[1]):
             if da[i, j] > minda + daRange*0.5:
@@ -59,18 +73,21 @@ def drawHeatMap(dataArray, imageSize, x, y, nData=[], colorBarLabel="", textOn=T
                 else:
                     ax.text(x[(j,i)]+dx/2, y[(j,i)]+dy/2, "-",
                            ha="center", va="center", color=cstr, fontsize=fsz)
-    
+
+    # set some image properties
     ax.tick_params(axis = "both", labelsize = 12)
     im_ratio = float(da.shape[0])/da.shape[1] 
     cbh = plt.colorbar(im,fraction=0.0477*im_ratio, pad=0.02)
     cbh.ax.set_ylabel(colorBarLabel, fontSize = 16);
+    # return 
     return
 
-# we define the binomial probability distribution function.
+# define the binomial probability distribution function for the MCMC
 def binPdf(n, r, c):
     return sp.comb(n,c)*(r**c)*((1-r)**(n-c));
 
 
+# define the binomial likelihood function for the MCMC, using the model defined by the user
 def lnBinlike(theta, data, model):
     x, y, n, c = data;
     r = funcModels.rateModel(x,y,theta,model);
@@ -84,6 +101,7 @@ def lnBinlike(theta, data, model):
 
 
 # For our prior $p(r)$, we'll set the prior = 1 on the interval $[0, 1]$ and zero otherwise.
+# this lengthy prior function just sorts through different values for different possible models
 def lnBinprior(theta, data, model):
     x, y, n, c = data
     if model == "linearX":
@@ -220,14 +238,12 @@ def lnBinprior(theta, data, model):
 
     return -np.inf
 
-# Then the log posterior probability is $\log p(\theta|c, n, p, m) = \log p(c|\theta, n, p, m) + \log p(\theta)$, which we code as 
-
+# the log posterior probability is $\log p(\theta|c, n, p, m) = \log p(c|\theta, n, p, m) + \log p(\theta)$
+# i.e., log(likelihood) + log(prior) = log(posterior)
 def lnBinprob(theta, data, model):
     lp = lnBinprior(theta, data, model)
-    # print("lnPoisprior = " + str(lp))
     if not np.isfinite(lp):
         return -np.inf
-    # print(str(lnPoislike(theta, A, c)))
     return lp + lnBinlike(theta, data, model)
 
 '''
@@ -249,13 +265,16 @@ where $p(\theta)$ is some prior distribution of the parameters.
 ''' 
 
 
-def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), stellarType = 'gk', periodMin = 1, periodMax = 400, rpMin = 0.5, rpMax = 15, mesMin = 0, mesMax = 30):
+def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, verbose = True, savepath = os.getcwd(), stellarType = 'gk',\
+     periodMin = 1, periodMax = 400, rpMin = 0.5, rpMax = 15, mesMin = 0, mesMax = 30, nwalkers = 100, nsteps = 5000):
+    '''
+    Calculate vetting completeness using a defined model and various keywords as explained in the documentation.
+    '''
 
-    # Read in our data.
+    # Read in the data.
     dataLoc = "../data/"
     injTceList = dataLoc + "kplr_dr25_inj1_tces.txt"
     tcelist = dataLoc + "DR25-Injected-Recovered-OnTarget-Planet-TCEs-1-1-Prat.txt"
-    # starlist = dataLoc + "dr25_stellar_updated_feh_" + stellarType + ".txt"
     starlist = "../stellarCatalogs/dr25_stellar_supp_gaia_clean_" + stellarType + ".txt"
 
 
@@ -265,35 +284,48 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
     injTces = ascii.read(injTceList)
     tces = np.genfromtxt(tcelist, dtype='str')
 
-    tceKepids = np.zeros(len(tces));
+    # sort out the TCEs we want
+    tceKepids = np.zeros(len(tces))
     for i in range(len(tces)):
         s = tces[i].split('-');
         tceKepids[i] = int(s[0]);
-    print(tceKepids)
+    if verbose == True:
+        #if you want, print the list of KIC IDs for the TCE hosts
+        print(tceKepids)
 
-    print("num injected/recovered TCEs: " + str(np.size(tceKepids)))
-    print("num injected TCEs: " + str(np.size(injTces)))
+    if verbose == True:
+        # if you want, print the list of the injection/recovery TCEs 
+        print("num injected/recovered TCEs: " + str(np.size(tceKepids)))
+        print("num injected TCEs: " + str(np.size(injTces)))
 
+    # find the correct injected TCEs corresponding to the real targets
     injTces = injTces[np.in1d(injTces['TCE_ID'],tces)]
-    print("num injected TCEs after trimming to injected/recovered: " + str(np.size(injTces)))
+
+    if verbose == True:
+        # if you want, print the number of injected and recovered TCEs
+        print("num injected TCEs after trimming to injected/recovered: " + str(np.size(injTces)))
 
 
     # Select only those TCEs that are in this stellar population
     injTces = injTces[np.in1d(injTces['KIC'],kic.kepid)]
-    print("after: " + str(np.size(injTces)))
+
+    if verbose == True:
+        # if you want, print the number of injected TCEs in the stellar population
+        print("number of TCEs in stellar catalog: " + str(np.size(injTces)))
 
 
-    # Do some basic stats
-    print(injTceList)
-    print("# of injected TCEs: " + str(len(injTces)))
-    print("# of injected PCs: " + str(len(injTces[injTces['Disp']=='PC'])))
-    print("# of injected FPs: " + str(len(injTces[injTces['Disp']=='FP'])))
-    print(' ')
+    if verbose == True:
+        # Do some basic stats
+        print(injTceList)
+        print("# of injected TCEs: " + str(len(injTces)))
+        print("# of injected PCs: " + str(len(injTces[injTces['Disp']=='PC'])))
+        print("# of injected FPs: " + str(len(injTces[injTces['Disp']=='FP']))) 
+        print(' ')
 
-    print("for " + str(rpMax) + " < Rp < " + str(rpMax) + ", " + str(periodMin) + " < period < " + str(periodMax) + ":");
-    print("# of injected injected TCEs: " + str(len(injTces[np.all([injTces['Rp']>rpMin,injTces['Rp']<rpMax,injTces['period']>periodMin,injTces['period']<periodMax], axis=0)])))
-    print("# of injected PCs: " + str(len(injTces[np.all([injTces['Disp']=='PC', injTces['Rp']>rpMin,injTces['Rp']<rpMax,injTces['period']>periodMin,injTces['period']<periodMax], axis=0)])))
-    print("# of injected FPs: " + str(len(injTces[np.all([injTces['Disp']=='FP', injTces['Rp']>rpMin,injTces['Rp']<rpMax,injTces['period']>periodMin,injTces['period']<periodMax], axis=0)])))
+        print("for " + str(rpMax) + " < Rp < " + str(rpMax) + ", " + str(periodMin) + " < period < " + str(periodMax) + ":");
+        print("# of injected injected TCEs: " + str(len(injTces[np.all([injTces['Rp']>rpMin,injTces['Rp']<rpMax,injTces['period']>periodMin,injTces['period']<periodMax], axis=0)])))
+        print("# of injected PCs: " + str(len(injTces[np.all([injTces['Disp']=='PC', injTces['Rp']>rpMin,injTces['Rp']<rpMax,injTces['period']>periodMin,injTces['period']<periodMax], axis=0)])))
+        print("# of injected FPs: " + str(len(injTces[np.all([injTces['Disp']=='FP', injTces['Rp']>rpMin,injTces['Rp']<rpMax,injTces['period']>periodMin,injTces['period']<periodMax], axis=0)])))
 
 
     # Separate out the PCs and FPs
@@ -303,7 +335,7 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
     fps = injTces[fpIndex]
 
 
-    # Select the TCEs that are in our desired population and plot them.
+    # Select the TCEs that are in our desired population and plot them (if desired)
     spIndex = np.where(np.all([
         injTces['Rp']>rpMin,injTces['Rp']<rpMax,injTces['period']>periodMin,injTces['period']<periodMax], axis=0))
     spInjTces = injTces[spIndex]
@@ -311,31 +343,38 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
     spInjFps = spInjTces[(spInjTces['Disp']=='FP') | (spInjTces['Score']<scoreCut)]
 
 
-    plt.figure(figsize=(15,15));
-    plt.subplot(2,2,1);
-    plt.scatter(injTces['period'], injTces['Expected_MES'], marker=".");
-    plt.ylim(0,mesMax);
-    plt.title("all injected TCEs");
-    plt.ylabel('Expected MES');
-    plt.xlabel('Period');
-    plt.subplot(2,2,2);
-    plt.scatter(spInjTces['period'], spInjTces['Expected_MES'], marker=".");
-    plt.ylim(0,mesMax);
-    plt.title("injected TCEs in period/MES range");
-    plt.xlabel('Period');
-    plt.ylabel('Expected MES');
-    plt.subplot(2,2,3);
-    plt.scatter(spInjPcs['period'], spInjPcs['Expected_MES'], marker=".");
-    plt.ylim(0,mesMax);
-    plt.title("injected PCs in period/MES range");
-    plt.ylabel('Expected MES');
-    plt.xlabel('Period');
-    plt.subplot(2,2,4);
-    plt.scatter(spInjFps['period'], spInjFps['Expected_MES'], marker=".");
-    plt.ylim(0,mesMax);
-    plt.title("injected FPss in period/MES range");
-    plt.ylabel('Expected MES');
-    plt.xlabel('Period');
+    if plots == True:
+        plt.figure(figsize=(15,15));
+
+        plt.subplot(2,2,1);
+        plt.scatter(injTces['period'], injTces['Expected_MES'], marker=".");
+        plt.ylim(0,mesMax);
+        plt.title("all injected TCEs");
+        plt.ylabel('Expected MES');
+        plt.xlabel('Period');
+
+        plt.subplot(2,2,2);
+        plt.scatter(spInjTces['period'], spInjTces['Expected_MES'], marker=".");
+        plt.ylim(0,mesMax);
+        plt.title("injected TCEs in period/MES range");
+        plt.xlabel('Period');
+        plt.ylabel('Expected MES');
+
+        plt.subplot(2,2,3);
+        plt.scatter(spInjPcs['period'], spInjPcs['Expected_MES'], marker=".");
+        plt.ylim(0,mesMax);
+        plt.title("injected PCs in period/MES range");
+        plt.ylabel('Expected MES');
+        plt.xlabel('Period');
+
+        plt.subplot(2,2,4);
+        plt.scatter(spInjFps['period'], spInjFps['Expected_MES'], marker=".");
+        plt.ylim(0,mesMax);
+        plt.title("injected FPss in period/MES range");
+        plt.ylabel('Expected MES');
+        plt.xlabel('Period');
+
+        plt.savefig(savepath + 'TCEs_and_MES.pdf')
 
 
     # Bin the populations onto a grid.  The binned TCEs and PCs are the input to our MCMC analysis.
@@ -384,21 +423,27 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
             fpGrid[(p,m)] = len(pointsInCell[0]);
 
 
-    drawHeatMap(tceGrid, (15,15), cellPeriod, cellMes, colorBarLabel="# of TCEs");  
-    plt.ylabel('Expected MES', fontsize = 16);
-    plt.xlabel('Period', fontsize = 16);
-    plt.savefig("vetCompNTCEs.eps",bbox_inches='tight')
-    plt.title("All Injected TCEs");
+    if plots == True:
+        # draw various TCE grids using the heatmap function
+        drawHeatMap(tceGrid, (15,15), cellPeriod, cellMes, colorBarLabel="# of TCEs");  
+        plt.ylabel('Expected MES', fontsize = 16);
+        plt.xlabel('Period', fontsize = 16);
+        plt.savefig("vetCompNTCEs.eps",bbox_inches='tight')
+        plt.title("All Injected TCEs");
+        plt.savefig(savepath + 'inj_TCEs.pdf')
 
 
-    drawHeatMap(pcGrid, (15,15), cellPeriod, cellMes, colorBarLabel="# of PCs");           
-    plt.title("Injected TCEs Dispositioned as PCs");
-    plt.ylabel('Expected MES', fontsize = 16);
-    plt.xlabel('Period', fontsize = 16);
-    drawHeatMap(fpGrid, (15,15), cellPeriod, cellMes, colorBarLabel="# of FPs");           
-    plt.title("Injected TCEs Dispositioned as FPs");
-    plt.ylabel('Expected MES', fontsize = 16);
-    plt.xlabel('Period', fontsize = 16);
+        drawHeatMap(pcGrid, (15,15), cellPeriod, cellMes, colorBarLabel="# of PCs");           
+        plt.title("Injected TCEs Dispositioned as PCs");
+        plt.ylabel('Expected MES', fontsize = 16);
+        plt.xlabel('Period', fontsize = 16);
+        plt.savefig(savepath + 'inj_TCE_PC.pdf')
+
+        drawHeatMap(fpGrid, (15,15), cellPeriod, cellMes, colorBarLabel="# of FPs");           
+        plt.title("Injected TCEs Dispositioned as FPs");
+        plt.ylabel('Expected MES', fontsize = 16);
+        plt.xlabel('Period', fontsize = 16);
+        plt.savefig(savepath + 'inj_TCE_FP.pdf')
 
 
 
@@ -407,23 +452,31 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
     pcFrac = np.zeros(np.shape(tceGrid))
     minTcePerCell = 0;
     pcFrac[tceGrid>minTcePerCell] = pcGrid[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell];
-    drawHeatMap(np.round(100*pcFrac), (15,15), cellPeriod, cellMes, colorBarLabel="% PCs", nData = tceGrid);           
-    plt.ylabel('Expected MES', fontsize = 16);
-    plt.xlabel('Period', fontsize = 16);
-    plt.savefig("vetCompInjRate.eps",bbox_inches='tight')
-    plt.title("% of Injected TCEs Dispositioned as PCs", fontsize = 16);
+
+    if plots == True:   
+        # and if you want, plot the percentage of PCs in each cell
+        drawHeatMap(np.round(100*pcFrac), (15,15), cellPeriod, cellMes, colorBarLabel="% PCs", nData = tceGrid);           
+        plt.ylabel('Expected MES', fontsize = 16);
+        plt.xlabel('Period', fontsize = 16);
+        plt.title("% of Injected TCEs Dispositioned as PCs", fontsize = 16);
+        plt.savefig(savepath + "vetCompInjRate.pdf",bbox_inches='tight')
 
 
+    # flatten the grids to make the analysis easier
     pcFlat = pcGrid.flatten();
     tceFlat = tceGrid.flatten();
 
     # convert to homogeneous coordinates on unit square [0,1]
+    # funcModels is from the DR25 documentation and describes some helper functions for analysis of DR25 data
     cellX, cellY = funcModels.normalizeRange(cellPeriod, cellMes, [periodMin, periodMax], [mesMin, mesMax]);
     gridShape = np.shape(cellX);
     dx = 1./gridShape[0];
     dy = 1./gridShape[1];
-    print("gridShape = " + str(gridShape) + ", dx = " + str(dx) + ", dy = " + str(dy))
 
+    if verbose == True:
+        print("gridShape = " + str(gridShape) + ", dx = " + str(dx) + ", dy = " + str(dy))
+
+    # make a nice TCE grid for analysis
     cellXFlat = cellX.flatten();
     cellYFlat = cellY.flatten();
 
@@ -457,13 +510,15 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
 
 
     # We now perform the MCMC calculation of the log posterior. 
-    #We use a manual three-part strategy to find the best seed point: first we use the initial values in the model definitions. 
+    # We use a manual three-part strategy to find the best seed point: first we use the initial values in the model definitions. 
     # This MCMC result is used to seed the second iterations, whose result is used to seed the third and final iteration.  
-    #We then initialize the MCMC walkers with a small Gaussian distribution around these starting points.
+    # We then initialize the MCMC walkers with a small Gaussian distribution around these starting points.
 
 
-    model = "logisticX0xRotatedLogisticY02"
+    #old model definition - now happens in the function call
+    # model = "logisticX0xRotatedLogisticY02"
 
+    # define a first starting point for the MCMC analysis
     if model == "logisticY0":
         initialPos = [ 0.14828331, 17.33408434,  0.92967224];
     elif model == "logisticX0xlogisticY0":
@@ -483,66 +538,80 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
     else:
         initialPos = funcModels.initRateModel(model);
 
-    print(initialPos)
+    if verbose == True:
+        print("Iniital position:", initialPos)
 
-
+    # next, do an optimization to find a good fit to feed into the MCMC
     nll = lambda *args: -lnBinlike(*args)
     result = op.minimize(nll, initialPos, args=(tceData, model))
     maxLikelihoodResult = result["x"];
     modelLabels = funcModels.getModelLabels(model)
-    for i in range(0,len(maxLikelihoodResult)):
-        print("maximum Likelihood " + modelLabels[i] + ":={:.3f}".format(maxLikelihoodResult[i]))
+    if verbose == True:
+        for i in range(0,len(maxLikelihoodResult)):
+            print("maximum Likelihood " + modelLabels[i] + ":={:.3f}".format(maxLikelihoodResult[i]))
         
+    # if the best fit from the initial optimizataion doesn't satisfy the prior, ignore it and just give the MCMC the initial positions
+    # this prints a warning regardless of whether verbose is on or not, because it's important!
     if lnBinprior(maxLikelihoodResult, tceData, model) == -np.inf:
         maxLikelihoodResult = initialPos;
         print("violates prior, replacing maxLikelihoodResult result with initialPos")
 
+    # evaluate the kepler model at the maximum likelihood from the optimization
     x, y, n, c = tceData
     r = funcModels.rateModel(x,y,maxLikelihoodResult,model);
-    print("maximum Likelihood rate min = {:.3f}".format(np.min(np.min(r))) + ", max = {:.3f}".format(np.max(np.max(r))))
+    if verbose == True:
+        print("maximum Likelihood rate min = {:.3f}".format(np.min(np.min(r))) + ", max = {:.3f}".format(np.max(np.max(r))))
 
-
-
-    # we'll use 20 walkers and 2000 steps so this doesn't take too long
-    # 100 walkers and 5000 steps is better
-
-    ndim, nwalkers = len(maxLikelihoodResult), 20
+    # now initialize some parameters for the emcee call
+    ndim = len(maxLikelihoodResult)
     pos = [maxLikelihoodResult + 1e-2*np.random.randn(ndim) for i in range(nwalkers)]
+    # instantiate the sampler with the walkers and log probability function
     sampler = emcee.EnsembleSampler(nwalkers, ndim, lnBinprob, args=(tceData, model))
-     
-    sampler.run_mcmc(pos, 2000);
+    
+    # run emcee for the desired number of steps
+    sampler.run_mcmc(pos, nsteps);
 
+    # remove 500 steps to account for burn-in
     samples = sampler.chain[:, 500:, :].reshape((-1, ndim))
     modelLabels = funcModels.getModelLabels(model)
+
+    # get the results from the MCMC samples
     dataResult = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]),
                                  zip(*np.percentile(samples, [16, 50, 84], axis=0)))
+    # make a list of the results and print the parameters
     dataResult = list(dataResult)
     for i in range(0,ndim):
         v = dataResult[i];    
-        print("MCMC " + modelLabels[i] + ":={:.3f}".format(v[0]) + "+{:.3f}".format(v[1]) + "-{:.3f}".format(v[2]))
-        # print("true " + modelLabels[i] + ":={:.3f}".format(trueTheta[i]))
+        if verbose == True: 
+            print("MCMC " + modelLabels[i] + ":={:.3f}".format(v[0]) + "+{:.3f}".format(v[1]) + "-{:.3f}".format(v[2]))
 
+    # print the various fits, if you want
+    # also fill in fitTheta
     resultSize = np.shape(dataResult);
     fitTheta = np.zeros(resultSize[0]);
     for i in range(resultSize[0]):
         fitTheta[i] = dataResult[i][0]
-    print("pcFitTheta:")
-    print(fitTheta)
-
-
+    if verbose == True:
+        print("pcFitTheta:")
+        print(fitTheta)
 
     reload(funcModels)
-    plt.figure(figsize=(10,5))
-    for i in range(0,ndim):
-        plt.subplot(ndim,1,i+1)
-        plt.plot(np.transpose(sampler.chain[:, :, i]), color="k", alpha=0.1);
-        plt.ylabel(modelLabels[i]);
+    if plots == True:
+        # if you want, plot the MCMC chains
+        plt.figure(figsize=(10,5))
+        for i in range(0,ndim):
+            plt.subplot(ndim,1,i+1)
+            plt.plot(np.transpose(sampler.chain[:, :, i]), color="k", alpha=0.1);
+            plt.ylabel(modelLabels[i]);
+        plt.savefig(savepath + 'chains_mcmc.pdf')
         
 
     modelLabels = funcModels.getModelLabels(model)
 
-    fig = corner.corner(samples, labels = modelLabels, label_kwargs = {"fontsize": 32}, truths = fitTheta)
-    plt.savefig("vetCompPost.eps",bbox_inches='tight')
+    if plots == True
+    # if you want, make a corner plot
+        fig = corner.corner(samples, labels = modelLabels, label_kwargs = {"fontsize": 32}, truths = fitTheta)
+        plt.savefig(savepath + "mcmc_corner.pdf",bbox_inches='tight')
 
 
     # We test the result by reconstructing the distribution of PCs and % of PCs using binomial-distributed random numbers, to see if they match the actual data.
@@ -553,24 +622,29 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
     fitTheta = np.zeros(resultSize[0]);
     for i in range(resultSize[0]):
         fitTheta[i] = dataResult[i][0]
-    print("fitTheta = " + str(fitTheta))
+    if verbose == True:
+        print("fitTheta = " + str(fitTheta))
 
     for p in range(NPeriod):
         for m in range(NMes):
             fitGrid[(p,m)] = np.random.binomial(tceGrid[(p,m)], 
                 funcModels.rateModel(cellX[(p,m)]+dx/2, cellY[(p,m)]+dy/2, fitTheta, model), 1);
-            
-    drawHeatMap(fitGrid, (15,15), cellPeriod, cellMes, nData = tceGrid);           
-    plt.title("Simulated TCEs Dispositioned as PCs");
-    plt.ylabel('Expected MES');
-    plt.xlabel('Period');
+
+    if plots == True:        
+        drawHeatMap(fitGrid, (15,15), cellPeriod, cellMes, nData = tceGrid);           
+        plt.title("Simulated TCEs Dispositioned as PCs");
+        plt.ylabel('Expected MES');
+        plt.xlabel('Period');
+        plt.savefig(savepath + 'simulatedTCEs.pdf')
 
     fitFrac = np.zeros(np.shape(tceGrid))
     fitFrac[tceGrid>minTcePerCell] = fitGrid[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell];
-    drawHeatMap(np.round(100*fitFrac), (15,15), cellPeriod, cellMes, nData = tceGrid);           
-    plt.title("Simulated % of TCEs Dispositioned as PCs");
-    plt.ylabel('Expected MES');
-    plt.xlabel('Period');
+    if plots == True:
+        drawHeatMap(np.round(100*fitFrac), (15,15), cellPeriod, cellMes, nData = tceGrid);           
+        plt.title("Simulated % of TCEs Dispositioned as PCs");
+        plt.ylabel('Expected MES');
+        plt.xlabel('Period');
+        plt.savefig(savepath + 'simulatedTCEs_percent.pdf')
 
 
     # Now do many realizations, and subtract the average from the observed to look for systematic differences.
@@ -579,7 +653,8 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
     fitGrid = np.zeros([np.shape(tceGrid)[0],np.shape(tceGrid)[1],nFits]);
     sidx = [0]*nFits
     progress = FloatProgress(min=0, max=nFits)
-    display(progress)
+    if verbose == True:
+        display(progress)
 
     for f in range(nFits):
         sidx[f] = int(np.random.uniform(high=samples.shape[0]-1));
@@ -598,26 +673,34 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
 
 
 
-    drawHeatMap(meanFit, (15,15), cellPeriod, cellMes, nData = tceGrid);           
-    plt.title("Mean Number of Simulated TCEs Dispositioned as PCs");
-    plt.ylabel('Expected MES');
-    plt.xlabel('Period');
+    if plots == True:
+        drawHeatMap(meanFit, (15,15), cellPeriod, cellMes, nData = tceGrid);           
+        plt.title("Mean Number of Simulated TCEs Dispositioned as PCs");
+        plt.ylabel('Expected MES');
+        plt.xlabel('Period');
+        plt.savefig(savepath + 'simulatedTCEs_ensemble.pdf')
 
     fitFracMean = np.zeros(np.shape(tceGrid))
     fitFracMean[tceGrid>minTcePerCell] = meanFit[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell];
-    drawHeatMap(np.round(100*fitFracMean), (15,15), cellPeriod, cellMes, nData = tceGrid, colorBarLabel="Mean PC %");           
-    plt.ylabel('Expected MES', fontsize = 16);
-    plt.xlabel('Period', fontsize = 16);
-    plt.savefig("vetCompMean.eps",bbox_inches='tight')
-    plt.title("Mean Simulated % of TCEs Dispositioned as PCs");
+
+    if plots == True:
+        drawHeatMap(np.round(100*fitFracMean), (15,15), cellPeriod, cellMes, nData = tceGrid, colorBarLabel="Mean PC %");           
+        plt.ylabel('Expected MES', fontsize = 16);
+        plt.xlabel('Period', fontsize = 16);
+        plt.savefig("vetCompMean.eps",bbox_inches='tight')
+        plt.title("Mean Simulated % of TCEs Dispositioned as PCs");
+        plt.savefig(savepath + 'simulatedTCEs_ensemble_percent.pdf')
+
 
     fitFracStd = np.zeros(np.shape(tceGrid))
     fitFracStd[tceGrid>minTcePerCell] = stdFit[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell];
-    drawHeatMap(np.round(100*fitFracStd), (15,15), cellPeriod, cellMes, nData = tceGrid, colorBarLabel="Standard Deviation %");           
-    plt.ylabel('Expected MES', fontsize = 16);
-    plt.xlabel('Period', fontsize = 16);
-    plt.savefig("vetCompStd.eps",bbox_inches='tight')
-    plt.title("Standard Deviation of the Simulated % of TCEs Dispositioned as PCs");
+    if plots == True:
+        drawHeatMap(np.round(100*fitFracStd), (15,15), cellPeriod, cellMes, nData = tceGrid, colorBarLabel="Standard Deviation %");           
+        plt.ylabel('Expected MES', fontsize = 16);
+        plt.xlabel('Period', fontsize = 16);
+        plt.savefig("vetCompStd.eps",bbox_inches='tight')
+        plt.title("Standard Deviation of the Simulated % of TCEs Dispositioned as PCs");
+        plt.savefig(savepath + 'simulatedTCEs_ensemble_stdev.pdf')
 
 
 
@@ -625,17 +708,20 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
     fitDiffNorm =np.zeros(fitDiff.shape)
     fitDiffNorm[tceGrid>minTcePerCell] = fitDiff[tceGrid>minTcePerCell]/stdFit[tceGrid>minTcePerCell];
 
-    drawHeatMap(np.round(100*fitDiff), (15,15), cellPeriod, cellMes, nData = tceGrid);           
-    plt.title("Residual from mean");
-    plt.ylabel('Expected MES');
-    plt.xlabel('Period');
+    if plots == True:
+        drawHeatMap(np.round(100*fitDiff), (15,15), cellPeriod, cellMes, nData = tceGrid);           
+        plt.title("Residual from mean");
+        plt.ylabel('Expected MES');
+        plt.xlabel('Period');
+        plt.savefig(savepath + 'MES_residual_ensemble_percent.pdf')
 
-    drawHeatMap(np.round(fitDiffNorm), (15,15), cellPeriod, cellMes, nData = tceGrid, 
-                colorBarLabel=r"Mean Residual ($\sigma$)"); 
-    plt.ylabel('Expected MES', fontsize = 16);
-    plt.xlabel('Period', fontsize = 16);
-    plt.savefig("vetCompMeanResid.eps",bbox_inches='tight')
-    plt.title("Residual from mean (standard deviations)");
+        drawHeatMap(np.round(fitDiffNorm), (15,15), cellPeriod, cellMes, nData = tceGrid, 
+                    colorBarLabel=r"Mean Residual ($\sigma$)"); 
+        plt.ylabel('Expected MES', fontsize = 16);
+        plt.xlabel('Period', fontsize = 16);
+        plt.savefig("vetCompMeanResid.eps",bbox_inches='tight')
+        plt.title("Residual from mean (standard deviations)");
+        plt.savefig(savepath + 'MES_residual_ensemble_stdev.pdf')
 
 
 
@@ -643,42 +729,44 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
 
 
     Z = funcModels.rateModel(cellX, cellY, fitTheta, model);
+    if plots == True:
+        fig = plt.figure(figsize=plt.figaspect(0.3));
+        ax = fig.add_subplot(1, 3, 1, projection='3d')
+        surf = ax.plot_surface(cellPeriod, cellMes, Z, alpha = 0.5);
+        scat = ax.scatter(cellPeriod[tceGrid>0], cellMes[tceGrid>0], pcFrac[tceGrid>0], c='r', marker = '.');
+        plt.xlabel("period");
+        plt.ylabel("Expected MES");
+        ax.view_init(0,0)
 
-    fig = plt.figure(figsize=plt.figaspect(0.3));
-    ax = fig.add_subplot(1, 3, 1, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, Z, alpha = 0.5);
-    scat = ax.scatter(cellPeriod[tceGrid>0], cellMes[tceGrid>0], pcFrac[tceGrid>0], c='r', marker = '.');
-    plt.xlabel("period");
-    plt.ylabel("Expected MES");
-    ax.view_init(0,0)
+        ax = fig.add_subplot(1, 3, 2, projection='3d')
+        surf = ax.plot_surface(cellPeriod, cellMes, Z, alpha = 0.5);
+        scat = ax.scatter(cellPeriod[tceGrid>0], cellMes[tceGrid>0], pcFrac[tceGrid>0], c='r', marker = '.');
+        plt.xlabel("period");
+        plt.ylabel("Expected MES");
+        ax.view_init(0,-90)
+        plt.title("Vetting completeness");
 
-    ax = fig.add_subplot(1, 3, 2, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, Z, alpha = 0.5);
-    scat = ax.scatter(cellPeriod[tceGrid>0], cellMes[tceGrid>0], pcFrac[tceGrid>0], c='r', marker = '.');
-    plt.xlabel("period");
-    plt.ylabel("Expected MES");
-    ax.view_init(0,-90)
-    plt.title("Vetting completeness");
+        ax = fig.add_subplot(1, 3, 3, projection='3d')
+        ax = fig.gca(projection='3d')
+        surf = ax.plot_surface(cellPeriod, cellMes, Z, alpha = 0.5);
+        scat = ax.scatter(cellPeriod[tceGrid>0], cellMes[tceGrid>0], pcFrac[tceGrid>0], c='r', marker = '.');
+        plt.xlabel("period");
+        plt.ylabel("Expected MES");
 
-    ax = fig.add_subplot(1, 3, 3, projection='3d')
-    ax = fig.gca(projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, Z, alpha = 0.5);
-    scat = ax.scatter(cellPeriod[tceGrid>0], cellMes[tceGrid>0], pcFrac[tceGrid>0], c='r', marker = '.');
-    plt.xlabel("period");
-    plt.ylabel("Expected MES");
+        plt.savefig(savepath + 'model_test_plot.pdf')
 
-    fig, ax = plt.subplots(figsize=(15,10));
-    CS = ax.contour(cellPeriod, cellMes, Z, colors='k', levels = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, .96, .97, .98, .99]);
-    ax.clabel(CS, inline=1, fontsize=18);
-    scf = ax.scatter(cellPeriod[tceGrid>0], cellMes[tceGrid>0], cmap="cividis", c=pcFrac[tceGrid>0], s=5*tceGrid[tceGrid>0], alpha = 0.5);
-    plt.xlabel("period", fontSize = 24);
-    plt.ylabel("Expected MES", fontSize = 24);
-    cbh = plt.colorbar(scf);
-    cbh.ax.set_ylabel("Measured Fraction");
-    plt.tick_params(labelsize = 12)
+        fig, ax = plt.subplots(figsize=(15,10));
+        CS = ax.contour(cellPeriod, cellMes, Z, colors='k', levels = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, .96, .97, .98, .99]);
+        ax.clabel(CS, inline=1, fontsize=18);
+        scf = ax.scatter(cellPeriod[tceGrid>0], cellMes[tceGrid>0], cmap="cividis", c=pcFrac[tceGrid>0], s=5*tceGrid[tceGrid>0], alpha = 0.5);
+        plt.xlabel("period", fontSize = 24);
+        plt.ylabel("Expected MES", fontSize = 24);
+        cbh = plt.colorbar(scf);
+        cbh.ax.set_ylabel("Measured Fraction");
+        plt.tick_params(labelsize = 12)
 
-    plt.savefig("vetCompContours.eps",bbox_inches='tight')
-    plt.title("Vetting completeness.  Size of marker = # of TCEs in cell", fontSize = 24);
+        plt.title("Vetting completeness.  Size of marker = # of TCEs in cell", fontSize = 24);
+        plt.savefig(savepath + "vetting_comp_contours.pdf",bbox_inches='tight')
 
 
 
@@ -701,19 +789,52 @@ def vettingCompleteness(plots = True, verbose = True, savepath = os.getcwd(), st
     f2 = funcModels.rateModel(cx, cy, fitTheta, model)
 
 
-
+    # plot the examples of the vetting completeness, if you want
     greyLevel = "0.7"
     rr = np.percentile(r1, [5, 95]);
-    plt.hist(r1[(r1 > 0.95*rr[0]) & (r1 < 1.05*rr[1])], 100, color=greyLevel);
-    plt.plot([f1, f1], [0, 3000], color='k', linestyle='--', linewidth=1)
+    if plots == True:
+        plt.hist(r1[(r1 > 0.95*rr[0]) & (r1 < 1.05*rr[1])], 100, color=greyLevel);
+        plt.plot([f1, f1], [0, 3000], color='k', linestyle='--', linewidth=1)
 
-    rr = np.percentile(r2, [5, 95]);
-    plt.hist(r2[(r2 > 0.95*rr[0]) & (r2 < 1.05*rr[1])], 100, color=greyLevel);
-    plt.plot([f2, f2], [0, 3000], color='k', linestyle='--', linewidth=1)
+        rr = np.percentile(r2, [5, 95]);
+        plt.hist(r2[(r2 > 0.95*rr[0]) & (r2 < 1.05*rr[1])], 100, color=greyLevel);
+        plt.plot([f2, f2], [0, 3000], color='k', linestyle='--', linewidth=1)
 
-    plt.xlabel("Vetting Completeness")
-    plt.savefig("vetCompExamples.eps",bbox_inches='tight')
+        plt.xlabel("Vetting Completeness")
+        plt.savefig(savepath + "vetCompExamples.pdf",bbox_inches='tight')
 
+    # write the results to a pickled table
+    fname = savepath + "vetCompletenessTable.pkl"
+    if os.path.isfile(fname):
+        modelComparisonTable = pd.read_pickle(fname)
+    else:
+        modelComparisonTable = pd.DataFrame({"Model": ["logisticY0", "dualBrokenPowerLaw",
+                                                       "logisticX0xlogisticY0", "logisticX0xlogisticY02",
+                                                       "logisticX0xRotatedLogisticY0", "logisticX0xRotatedLogisticY02",
+                                                       "rotatedLogisticX0xlogisticY0", "rotatedLogisticX0xlogisticY02" ], 
+                                            "medianMCMCAIC": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                            "minMCMCAIC": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                            "maxLikelihoodAIC": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                            "MedianLogPost": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                            "IntegralPost": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                            "IntegralPostErr": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                                            "medianMCMCTheta": [[0],[0],[0],[0],[0],[0],[0],[0]],
+                                            "maxLikelihoodTheta": [[0],[0],[0],[0],[0],[0],[0],[0]],
+                                            "periodRange": [[0],[0],[0],[0],[0],[0],[0],[0]],
+                                            "mesRange": [[0],[0],[0],[0],[0],[0],[0],[0]]},
+                                           columns=["Model","BayesFactor","BayesFactorError","AICRelativeProb","medianMCMCAIC",
+                                                    "minMCMCAIC","maxLikelihoodAIC",
+                                                    "IntegralPost","IntegralPostErr","MedianLogPost","medianMCMCTheta",
+                                                    "maxLikelihoodTheta","periodRange","mesRange"])
+        modelComparisonTable['IntegralPost'] = modelComparisonTable['IntegralPost'].map('{:,.3e}'.format)
+        modelComparisonTable['IntegralPostErr'] = modelComparisonTable['IntegralPostErr'].map('{:,.3e}'.format)
+        mctIndex = np.where(modelComparisonTable["Model"].isin([model]))[0][0]
+        modelComparisonTable["medianMCMCTheta"][mctIndex] = fitTheta;
+        modelComparisonTable["maxLikelihoodTheta"][mctIndex] = maxLikelihoodResult;
+        modelComparisonTable["periodRange"][mctIndex] = [periodMin, periodMax];
+        modelComparisonTable["mesRange"][mctIndex] = [mesMin, mesMax];
+
+    modelComparisonTable.to_pickle(fname)
 
     return
 
@@ -724,25 +845,30 @@ def main(argv):
 
     try:
         argument_list = argv[1:]
-        short_options = 'i:v:s:t:p:P:r:R:' #plots y/n, verbose y/n, savepath for files, spectral types to include, period min, period max, rp min, rp max
-        long_options = 'images:verbose:savepath:spt:pmin:pmax:rpmin:rpmax:' 
+        short_options = 'm:i:v:s:t:p:P:r:R:n:N:' #model name, plots y/n, verbose y/n, savepath for files, spectral types to include, period min, period max, rp min, rp max, nwalkers, nsteps
+        long_options = 'model:images:verbose:savepath:spt:pmin:pmax:rpmin:rpmax:nwalk:nstep:' 
         arguments, values = getopt.getopt(argument_list, short_options, long_options)
 
         # get out the various results of the keywords
-        plots = strtobool(str(arguments[0][1]))
-        verbose = strtobool(str(arguments[1][1]))
-        savepath = arguments[2][1] + '/'
-        spt = arguments[3][1].lower()
-        pmin = float(arguments[4][1])
-        pmax = float(arguments[5][1])
-        rpmin = float(arguments[6][1])
-        rpmax = float(arguments[7][1])
+        model = str(arguments[0][1])
+        plots = strtobool(str(arguments[1][1]))
+        verbose = strtobool(str(arguments[2][1]))
+        savepath = arguments[3][1] + '/'
+        spt = arguments[4][1].lower()
+        pmin = float(arguments[5][1])
+        pmax = float(arguments[6][1])
+        rpmin = float(arguments[7][1])
+        rpmax = float(arguments[8][1])
+        nwalkers = int(arguments[9][1])
+        nsteps = int(arguments[10][1])
         mesMin = 0
         mesMax = 30
-    except:
-        print('No inputs given, running iwth default settings: plots = True, verbose = True, savepath = current working directory, spt = \'GK\', min. period = 1 d\
-            max period = 400 d, min Rp = 0.5 Re, max Rp = 15 Re. The code always uses all MES values: a range of 0-30.')
 
+    except:
+        print('No inputs given, running iwth default settings: models = logisticX0xRotatedLogisticY02, plots = True, verbose = True, savepath = current working directory,\
+         spt = \'GK\', min. period = 1 d, max period = 400 d, min Rp = 0.5 Re, max Rp = 15 Re, nwalkers = 200, nsteps = 5000. The code always uses all MES values: a range of 0-30.')
+       
+        model = 'logisticX0xRotatedLogisticY02'
         plots = True
         verbose = True
         savepath = os.getcwd() + '/'
@@ -753,6 +879,8 @@ def main(argv):
         rpmax = 15
         mesMin = 0
         mesMax = 30
+        nwalkers = 200
+        nsteps = 5000
 
     # check the spectral type inputs are valid
     test_spt = [s not in 'fgkm' for s in spt]
@@ -772,11 +900,13 @@ def main(argv):
 
 
     # print out the running statement 
-    print('Assessing vetting completeness with the following settings: plots = {}, verbose = {}, savepath = {}, spectral types = {}, \
-        P min = {} d, P max = {} d, Rp min = {} Re, Rp max = {} Re, MES min = {}, MES max = {}'.format(plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, mesMin, mesMax))
+    print('Assessing vetting completeness with the following settings: model = {}, plots = {}, verbose = {}, savepath = {}, spectral types = {}, \
+        P min = {} d, P max = {} d, Rp min = {} Re, Rp max = {} Re, MES min = {}, MES max = {}, nwalkers = {}, nsteps = {}'.\
+        format(model, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, mesMin, mesMax, nwalkers, nsteps))
 
-    vettingCompleteness(plots = plots, verbose = verbose, savepath = savepath, stellarType = spt,\
-        periodMin = pmin, periodMax = pmax, rpMin = rpmin, rpMax = rpmax, mesMin = mesMin, mesMax = mesMax)
+    # calculate the vetting completeness
+    vettingCompleteness(model = model, plots = plots, verbose = verbose, savepath = savepath, stellarType = spt,\
+        periodMin = pmin, periodMax = pmax, rpMin = rpmin, rpMax = rpmax, mesMin = mesMin, mesMax = mesMax, nwalkers = nwalkers, nsteps = nsteps,)
 
     return
 
