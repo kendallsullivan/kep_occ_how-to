@@ -10,6 +10,7 @@ def read_stellar_table(filename):
     kic = pd.read_csv(filename)
     all_datas = []
     all_keys = []
+    # get the various stellar parameters we need for the KeplerPORTs run
     for i in range(len(kic.kepid)):
         cur = kp.kepler_single_comp_data()
         cur.id = kic.kepid[i]
@@ -32,6 +33,9 @@ def nas_multi_grid_dr25(worker_id, n_workers, min_period, max_period,
                          stellar_database,
                         planet_metric_path, ve_data_file,
                         ve_model_name, output_prefix):
+    '''
+    This script is what calculates the completeness contour for a single star.
+    '''
 
     print("worker id " + str(worker_id))
     # Define the grids and data parameters
@@ -56,12 +60,14 @@ def nas_multi_grid_dr25(worker_id, n_workers, min_period, max_period,
             print(str(np.round(100.*np.double(i)/len(kiclist), 2)) + "%")
         if np.mod(i, n_workers) == worker_id :
             curid = kiclist[i]
+            # check if the star has an associated window function
             windowfunc_filename = os.path.join(planet_metric_path,'kplr' + \
                                   '{:09d}'.format(curid) + \
                                   '_dr25_window.fits')
             if not os.path.isfile(windowfunc_filename):
                 print("worker " + str(worker_id) + " skipping " + windowfunc_filename)
                 continue
+            #  Add some new entries to each stellar entry in the dictionary that was created above
             usekiclist = np.append(usekiclist, curid)
             curdict = stellar_dict[curid]
             curdict.period_want = period_want
@@ -72,9 +78,10 @@ def nas_multi_grid_dr25(worker_id, n_workers, min_period, max_period,
             curdict.ve_model_name = ve_model_name
             if not doneOnce:
                 DEMod = None
+            # calculate the completeness contour for a star
             probdet, probtot, DEMod = kp.kepler_single_comp_dr25(curdict, DEMod=DEMod)
             doneOnce = True
-
+            # check that everything is finite
             if np.logical_not(np.all(np.isfinite(probdet))):
                 print ("non finite probdet detected.  skipping.")
                 print (curid)
@@ -83,6 +90,7 @@ def nas_multi_grid_dr25(worker_id, n_workers, min_period, max_period,
                 print ("non finite probtot detected.  skipping.")
                 print (curid)
                 continue
+            # add in the star's completeness to the composite completeness
             cumulative_array[0] = cumulative_array[0] + probdet
             cumulative_array[1] = cumulative_array[1] + probtot
     # check that the final cumulative_array is clean
@@ -108,7 +116,7 @@ def nas_multi_grid_dr25(worker_id, n_workers, min_period, max_period,
     # Now add the kics used in this chunk of the data
     newcol = fits.Column(name='kiclist', format='J', array=usekiclist)
     cols = fits.ColDefs([newcol])
-    #    tbhdu = fits.new_table(cols)
+
     tbhdu = fits.BinTableHDU.from_columns(cols)
     hdulist.append(tbhdu)
     # Write out fits file

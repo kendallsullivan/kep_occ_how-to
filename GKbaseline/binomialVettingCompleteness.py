@@ -865,7 +865,7 @@ def main(argv):
         mesMax = 30
 
     except:
-        print('No inputs given, running iwth default settings: models = logisticX0xRotatedLogisticY02, plots = True, verbose = True, savepath = current working directory,\
+        print('No inputs given, running with default settings: model = logisticX0xRotatedLogisticY02, plots = True, verbose = True, savepath = current working directory,\
          spt = \'GK\', min. period = 1 d, max period = 400 d, min Rp = 0.5 Re, max Rp = 15 Re, nwalkers = 200, nsteps = 5000. The code always uses all MES values: a range of 0-30.')
        
         model = 'logisticX0xRotatedLogisticY02'
