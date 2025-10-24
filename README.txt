@@ -3,9 +3,9 @@ To do:
 -- convert Steve's jupyter notebooks into python scripts
 	-- createStellarCatalogs -- done!
 	-- binomialVettingCompleteness - written and commented but not tested
-	-- calc_composite_completeness - written and commented but not testedt
-	-- binomialFPEffectiveness
-	-- binomialObsFPRate
+	-- calc_composite_completeness - written and commented but not tested
+	-- binomialFPEffectiveness - written and commented but not tested
+	-- binomialObsFPRate - written and commented but not tested
 	-- makePlanetInput
 	-- NOT computeOccurrence -- this should switch to Anne's code
 	-- occurrence (this is my own Jupyter notebook with the bones adapted from Anne)

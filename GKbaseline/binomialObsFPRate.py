@@ -569,31 +569,29 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         for m in range(NMes):
             fitGrid[(p,m)] = np.random.binomial(obsTceGrid[(p,m)], 
                 funcModels.rateModel(cellX[(p,m)]+dx/2, cellY[(p,m)]+dx/2, fpFitTheta, obsModel), 1)
-            
-    drawHeatMap(fitGrid, (10,10), cellPeriod, cellMes)
-    plt.title('reconstructed Observed FPs from the fit')
-    plt.ylabel('MES')
-    plt.xlabel('Period')
 
-    fitFrac = np.zeros(np.shape(obsTceGrid))
-    fitFrac[obsTceGrid>minTcePerCell] = fitGrid[obsTceGrid>minTcePerCell]/obsTceGrid[obsTceGrid>minTcePerCell]
-    drawHeatMap(np.round(100*fitFrac), (10,10), cellPeriod, cellMes)           
-    plt.title('reconstructed Observed FP rate from the fit')
-    plt.ylabel('MES')
-    plt.xlabel('Period')
+    if plots == True:
+        drawHeatMap(fitGrid, (10,10), cellPeriod, cellMes)
+        plt.title('reconstructed Observed FPs from the fit')
+        plt.ylabel('MES')
+        plt.xlabel('Period')
+        plt.saveefig('reconstructed_FPs.pdf')
 
-
-
-    # In[29]:
-
+        fitFrac = np.zeros(np.shape(obsTceGrid))
+        fitFrac[obsTceGrid>minTcePerCell] = fitGrid[obsTceGrid>minTcePerCell]/obsTceGrid[obsTceGrid>minTcePerCell]
+        drawHeatMap(np.round(100*fitFrac), (10,10), cellPeriod, cellMes)           
+        plt.title('reconstructed Observed FP rate from the fit')
+        plt.ylabel('MES')
+        plt.xlabel('Period')
+        plt.savefig('reconstructed_FP_rate.pdf')
 
 
-
-    nFits = 100
+    nFits = nfits
     fitGrid = np.zeros([np.shape(obsTceGrid)[0],np.shape(obsTceGrid)[1],nFits])
     sidx = [0]*nFits
     progress = FloatProgress(min=0, max=nFits)
-    display(progress)
+    if verbose == True:
+        display(progress)
 
 
     for f in range(nFits):
@@ -611,62 +609,47 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
     meanFit = np.mean(fitGrid, 2)
     stdFit = np.std(fitGrid, 2)
 
-
-
-
-
-    # In[30]:
-
-
-    drawHeatMap(meanFit, (15,15), cellPeriod, cellMes)           
-    plt.title("Mean reconstructed Observed FPs from the fit")
-    plt.ylabel('MES')
-    plt.xlabel('Period')
-
     fitFracMean = np.zeros(np.shape(obsTceGrid))
     fitFracMean[obsTceGrid>minTcePerCell] = meanFit[obsTceGrid>minTcePerCell]/obsTceGrid[obsTceGrid>minTcePerCell]
-    drawHeatMap(np.round(fitFracMean, 2), (15,15), cellPeriod, cellMes, 
-                nData = obsTceGrid, colorBarLabel="Mean FP %", forceInt=False)           
-    plt.ylabel('MES')
-    plt.xlabel('Period')
-    plt.savefig("obsFPMean.eps",bbox_inches='tight')
-    plt.title("Mean Observed FP rate reconstructed from the fit")
+
+    if plots == True:
+        drawHeatMap(np.round(fitFracMean, 2), (15,15), cellPeriod, cellMes, 
+                    nData = obsTceGrid, colorBarLabel="Mean FP %", forceInt=False)           
+        plt.ylabel('MES')
+        plt.xlabel('Period')
+        plt.title("Mean Observed FP rate reconstructed from the fit")
+        plt.savefig("obsFPMean.pdf",bbox_inches='tight')
+
 
     stdFrac = np.zeros(np.shape(obsTceGrid))
     stdFrac[obsTceGrid>minTcePerCell] = stdFit[obsTceGrid>minTcePerCell]/obsTceGrid[obsTceGrid>minTcePerCell]
-    drawHeatMap(np.round(stdFrac, 2), (15,15), cellPeriod, cellMes, 
-                nData = obsTceGrid, colorBarLabel="Standard Deviation", forceInt=False)           
-    plt.ylabel('MES')
-    plt.xlabel('Period')
-    plt.savefig("obsFPStd.eps",bbox_inches='tight')
-    plt.title("Fractional standard deviation of the Observed FP rate reconstructed from the fit")
 
-
-    # In[31]:
-
+    if plots == True:
+        drawHeatMap(np.round(stdFrac, 2), (15,15), cellPeriod, cellMes, 
+                    nData = obsTceGrid, colorBarLabel="Standard Deviation", forceInt=False)           
+        plt.ylabel('MES')
+        plt.xlabel('Period')
+        plt.title("Fractional standard deviation of the Observed FP rate reconstructed from the fit")
+        plt.savefig("obsFPStd.pdf",bbox_inches='tight')
 
     fitDiff = fitFracMean - obsFpFrac
     fitDiffNorm =np.zeros(fitDiff.shape)
     fitDiffNorm[stdFit>0] = fitDiff[stdFit>0]/stdFit[stdFit>0]
 
-    drawHeatMap(np.round(fitDiff, 2), (15,15), cellPeriod, cellMes, nData = obsTceGrid, forceInt = False)           
-    plt.title("Residual from mean")
-    plt.ylabel('MES', fontsize = 16)
-    plt.xlabel('Period', fontsize = 16)
+    if plots == True:
+        drawHeatMap(np.round(fitDiff, 2), (15,15), cellPeriod, cellMes, nData = obsTceGrid, forceInt = False)           
+        plt.title("Residual from mean")
+        plt.ylabel('MES', fontsize = 16)
+        plt.xlabel('Period', fontsize = 16)
+        plt.savefig('FP_residual_from_mean_frac.pdf')
 
-    drawHeatMap(np.round(fitDiffNorm, 2), (15,15), cellPeriod, cellMes, nData = obsTceGrid, 
-                colorBarLabel="Mean Residual (in standard deviations)", forceInt = False) 
-    plt.ylabel('MES', fontsize = 16)
-    plt.xlabel('Period', fontsize = 16)
-    plt.savefig("obsFPMeanResid.eps",bbox_inches='tight')
-    plt.title("Residual from mean (in standard deviations)")
+        drawHeatMap(np.round(fitDiffNorm, 2), (15,15), cellPeriod, cellMes, nData = obsTceGrid, 
+                    colorBarLabel="Mean Residual (in standard deviations)", forceInt = False) 
+        plt.ylabel('MES', fontsize = 16)
+        plt.xlabel('Period', fontsize = 16)
+        plt.title("Residual from mean (in standard deviations)")
+        plt.savefig("obsFPMeanResid_std.pdf",bbox_inches='tight')
 
-    plt.figure(figsize=(15,5))
-    plt.hist(fitDiffNorm.flatten()[nObsTce > 0], 100)
-
-    np.median(fitDiffNorm.flatten()[nObsTce > 0])
-
-    # for this tutorial we are not doing model comparison, so only fill in data about this fit
 
     fname = "obsFpTable.pkl"
     if os.path.isfile(fname):
@@ -711,7 +694,7 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
     return
 
 
-def main():
+def main(argv):
     
     try:
         argument_list = argv[1:]
