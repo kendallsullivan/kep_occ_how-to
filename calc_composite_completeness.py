@@ -11,6 +11,8 @@ import compute_num_completeness_mproc as mproc
 
 ''' 
 Instructions in Steve's readme for a single run:
+None of it is necessary to run this script, it's just here for reference.
+
 1) Edit "./make_contours_multiproc.txt" and change "/Volumes/yoru/dr25/dr25CompletenessFits" to the location of your Window Function and One-sigma Depth Functions downloaded above. 
 You may want to set the number of threads as appropriate to your machine via the variable nworkers in this script.  Currently nworkers = 8.  
 Then run "./make_contours_multiproc.txt" . This takes about 4 hours on a 12-processor machine.
