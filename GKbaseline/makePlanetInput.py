@@ -53,105 +53,78 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     pR = R;
     pR[pR<0] = 0;
 
-    ax = fig.add_subplot(1, 3, 1, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-    ax.view_init(0,0)
+    if plots == True:
+        fig, ax = plt.subplots(figsize=(10,10));
+        CS = ax.contour(cellPeriod, cellMes, pR, colors='k', levels = [.45, .5, .55, .6, .7, .75, .8, .85, .9, .95, .99]);
+        ax.clabel(CS, inline=1, fontsize=18);
+        ax.tick_params(axis = "both", labelsize = 18)
+        plt.xlabel("period (days)", fontsize = 24);
+        plt.ylabel("MES", fontsize = 24);
+        plt.title("Reliability Against False Alarms", fontsize = 24);
+        plt.savefig("reliabilityContours.pdf",bbox_inches='tight')
 
-    ax = fig.add_subplot(1, 3, 2, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-    ax.view_init(0,-90)
-    plt.title("Reliability");
-
-    ax = fig.add_subplot(1, 3, 3, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-
-
-    fig, ax = plt.subplots(figsize=(10,10));
-    CS = ax.contour(cellPeriod, cellMes, pR, colors='k', levels = [.45, .5, .55, .6, .7, .75, .8, .85, .9, .95, .99]);
-    ax.clabel(CS, inline=1, fontsize=18);
-    ax.tick_params(axis = "both", labelsize = 18)
-    plt.xlabel("period (days)", fontsize = 24);
-    plt.ylabel("MES", fontsize = 24);
-    plt.savefig("reliabilityContours.eps",bbox_inches='tight')
-    plt.title("Reliability Against False Alarms", fontsize = 24);
-
-
-
-
-    # In[5]:
-
-
-    fig = plt.figure(figsize=plt.figaspect(0.3));
+    # fig = plt.figure(figsize=plt.figaspect(0.3));
     R = (1-effFit)/effFit
 
     pR = R;
     pR[pR<0] = 0;
 
-    ax = fig.add_subplot(1, 3, 1, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-    ax.view_init(0,0)
+    # ax = fig.add_subplot(1, 3, 1, projection='3d')
+    # surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
+    # plt.xlabel("period");
+    # plt.ylabel("MES");
+    # ax.view_init(0,0)
 
-    ax = fig.add_subplot(1, 3, 2, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-    ax.view_init(0,-90)
-    plt.title("1-E/E");
+    # ax = fig.add_subplot(1, 3, 2, projection='3d')
+    # surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
+    # plt.xlabel("period");
+    # plt.ylabel("MES");
+    # ax.view_init(0,-90)
+    # plt.title("1-E/E");
 
-    ax = fig.add_subplot(1, 3, 3, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-
-
-    fig, ax = plt.subplots(figsize=(5,5));
-    CS = ax.contour(cellPeriod, cellMes, pR);
-    ax.clabel(CS, inline=1, fontsize=10);
-    plt.xlabel("period");
-    plt.ylabel("MES");
+    # ax = fig.add_subplot(1, 3, 3, projection='3d')
+    # surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
+    # plt.xlabel("period");
+    # plt.ylabel("MES");
 
 
-    # In[6]:
+    # fig, ax = plt.subplots(figsize=(5,5));
+    # CS = ax.contour(cellPeriod, cellMes, pR);
+    # ax.clabel(CS, inline=1, fontsize=10);
+    # plt.xlabel("period");
+    # plt.ylabel("MES");
 
 
-    fig = plt.figure(figsize=plt.figaspect(0.3));
+    # fig = plt.figure(figsize=plt.figaspect(0.3));
     R = obsFit/(1-obsFit)
 
     pR = R;
     pR[pR<0] = 0;
 
-    ax = fig.add_subplot(1, 3, 1, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-    ax.view_init(0,0)
+    # ax = fig.add_subplot(1, 3, 1, projection='3d')
+    # surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
+    # plt.xlabel("period");
+    # plt.ylabel("MES");
+    # ax.view_init(0,0)
 
-    ax = fig.add_subplot(1, 3, 2, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-    ax.view_init(0,-90)
-    plt.title("obs/(1-obs)");
+    # ax = fig.add_subplot(1, 3, 2, projection='3d')
+    # surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
+    # plt.xlabel("period");
+    # plt.ylabel("MES");
+    # ax.view_init(0,-90)
+    # plt.title("obs/(1-obs)");
 
-    ax = fig.add_subplot(1, 3, 3, projection='3d')
-    surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
+    # ax = fig.add_subplot(1, 3, 3, projection='3d')
+    # surf = ax.plot_surface(cellPeriod, cellMes, pR, alpha = 0.5);
+    # plt.xlabel("period");
+    # plt.ylabel("MES");
 
 
-    fig, ax = plt.subplots(figsize=(5,5));
-    CS = ax.contour(cellPeriod, cellMes, pR);
-    ax.clabel(CS, inline=1, fontsize=10);
-    plt.xlabel("period");
-    plt.ylabel("MES");
+    # fig, ax = plt.subplots(figsize=(5,5));
+    # CS = ax.contour(cellPeriod, cellMes, pR);
+    # ax.clabel(CS, inline=1, fontsize=10);
+    # plt.xlabel("period");
+    # plt.ylabel("MES");
 
 
     R = 1 - (obsFit/(1-obsFit))*((1-effFit)/effFit)
@@ -168,25 +141,27 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     r3, f3 = computeReliabiltyPosterior(365., 8., eSamples, oSamples)
 
     ymax = 10000
-    plt.figure(figsize=(15,10))
-    plt.hist(r1, 20);
-    plt.plot([f1, f1], [0, ymax], color='k', linestyle='--', linewidth=1, alpha = 0.2)
+    if plots == True:
+        plt.figure(figsize=(15,10))
+        plt.hist(r1, 20);
+        plt.plot([f1, f1], [0, ymax], color='k', linestyle='--', linewidth=1, alpha = 0.2)
 
-    plt.hist(r2, 100, alpha = 0.5);
-    plt.plot([f2, f2], [0, ymax], color='k', linestyle='--', linewidth=1, alpha = 1)
+        plt.hist(r2, 100, alpha = 0.5);
+        plt.plot([f2, f2], [0, ymax], color='k', linestyle='--', linewidth=1, alpha = 1)
 
-    plt.hist(r3, 100, alpha = 0.5);
-    plt.plot([f3, f3], [0, ymax], color='k', linestyle='--', linewidth=1, alpha = 1)
-    plt.ylim(0, ymax)
-    plt.xlim(0, 1.2)
-    plt.tick_params(labelsize = 18)
-    plt.xlabel("$R_\mathrm{FA}$", fontSize = 24);
+        plt.hist(r3, 100, alpha = 0.5);
+        plt.plot([f3, f3], [0, ymax], color='k', linestyle='--', linewidth=1, alpha = 1)
+        plt.ylim(0, ymax)
+        plt.xlim(0, 1.2)
+        plt.tick_params(labelsize = 18)
+        plt.xlabel(r"$R_\mathrm{FA}$", fontSize = 24);
 
-    plt.savefig("reliabilityExamples.png",bbox_inches='tight')
+        plt.savefig("reliabilityExamples.pdf",bbox_inches='tight')
 
-    print("f1:" + str(f1))
-    print("f2:" + str(f2))
-    print("f3:" + str(f3))
+    if verbose == True:
+        print("f1:" + str(f1))
+        print("f2:" + str(f2))
+        print("f3:" + str(f3))
 
 
     if False:
@@ -210,7 +185,8 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     dr25CleanStellarIso = pd.read_csv("../stellarCatalogs/dr25_stellar_supp_gaia_clean_{}.txt".format(spt))
     dr25Koi = dr25Koi[dr25Koi.kepid.isin(dr25CleanStellarIso.kepid)]
     dr25Koi = dr25Koi.reset_index(drop=True)
-    print("After removing planets not in the stellar catalog, we have " + str(len(dr25Koi)) + " KOIs")
+    if verbose == True:
+        print("After removing planets not in the stellar catalog, we have " + str(len(dr25Koi)) + " KOIs")
 
     # merge in only radius with uncertainties and teff from the stellar table
     dr25Koi = pd.merge(dr25Koi, dr25CleanStellarIso[["kepid","radius","radius_err1","radius_err2","teff"]], on="kepid", how="inner")
@@ -228,23 +204,23 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     dr25Koi = dr25Koi[~np.isnan(dr25Koi.koi_prad)]
 
     v = dr25Koi.corrected_prad_err1/dr25Koi.koi_prad_err1
-    plt.hist(v[v<5], 100);
+    # plt.hist(v[v<5], 100);
 
-    plt.hist(dr25Koi['corrected_prad'][dr25Koi['corrected_prad']<10], 100);
+    # plt.hist(dr25Koi['corrected_prad'][dr25Koi['corrected_prad']<10], 100);
 
-    fig, ax = plt.subplots(figsize=(15,10));
-    ax.errorbar(dr25Koi.koi_period, dr25Koi.koi_prad, 
-                yerr = [-dr25Koi.koi_prad_err2, dr25Koi.koi_prad_err1],
-                fmt="k.", alpha = 0.5);
-    ax.errorbar(dr25Koi.koi_period, dr25Koi.corrected_prad, 
-                yerr = [-dr25Koi.corrected_prad_err2, dr25Koi.corrected_prad_err1],
-                fmt="r.", alpha = 0.5);
+    # fig, ax = plt.subplots(figsize=(15,10));
+    # ax.errorbar(dr25Koi.koi_period, dr25Koi.koi_prad, 
+    #             yerr = [-dr25Koi.koi_prad_err2, dr25Koi.koi_prad_err1],
+    #             fmt="k.", alpha = 0.5);
+    # ax.errorbar(dr25Koi.koi_period, dr25Koi.corrected_prad, 
+    #             yerr = [-dr25Koi.corrected_prad_err2, dr25Koi.corrected_prad_err1],
+    #             fmt="r.", alpha = 0.5);
 
-    plt.xlabel("period");
-    plt.ylabel("planet radius");
-    plt.title("KOI Radius Change");
-    plt.ylim([0, 2.5])
-    plt.xlim([50, 400])
+    # plt.xlabel("period");
+    # plt.ylabel("planet radius");
+    # plt.title("KOI Radius Change");
+    # plt.ylim([0, 2.5])
+    # plt.xlim([50, 400])
 
 
     dr25Fpp = ascii.read("../data/q1_q17_dr25_koifpp.txt")
@@ -284,29 +260,29 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
 
     mergedDr25Koi["totalReliability"] = (1-mergedDr25Koi.fpp_prob_use)*mergedDr25Koi.reliability
 
-    fig, ax = plt.subplots(figsize=(15,10));
-    scf = ax.scatter(mergedDr25Koi.koi_period, mergedDr25Koi.koi_max_mult_ev, cmap="viridis", 
-                     c=mergedDr25Koi.reliability, edgecolors='k', s=100*mergedDr25Koi.totalReliability, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-    plt.title("KOI Reliability, size = total reliability");
-    plt.ylim([7, 50])
-    plt.xlim([50, 400])
+    # fig, ax = plt.subplots(figsize=(15,10));
+    # scf = ax.scatter(mergedDr25Koi.koi_period, mergedDr25Koi.koi_max_mult_ev, cmap="viridis", 
+    #                  c=mergedDr25Koi.reliability, edgecolors='k', s=100*mergedDr25Koi.totalReliability, alpha = 0.5);
+    # plt.xlabel("period");
+    # plt.ylabel("MES");
+    # plt.title("KOI Reliability, size = total reliability");
+    # plt.ylim([7, 50])
+    # plt.xlim([50, 400])
 
-    cbh = plt.colorbar(scf);
-    cbh.ax.set_ylabel("Reliability");
+    # cbh = plt.colorbar(scf);
+    # cbh.ax.set_ylabel("Reliability");
 
-    fig, ax = plt.subplots(figsize=(15,10));
-    scf = ax.scatter(mergedDr25Koi.koi_period, mergedDr25Koi.corrected_prad, cmap="viridis", 
-                     c=mergedDr25Koi.reliability, edgecolors='k', s=100*mergedDr25Koi.totalReliability, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("planet radius");
-    plt.title("KOI FA Reliability, size = total reliability");
-    plt.ylim([0, 2.5])
-    plt.xlim([50, 400])
+    # fig, ax = plt.subplots(figsize=(15,10));
+    # scf = ax.scatter(mergedDr25Koi.koi_period, mergedDr25Koi.corrected_prad, cmap="viridis", 
+    #                  c=mergedDr25Koi.reliability, edgecolors='k', s=100*mergedDr25Koi.totalReliability, alpha = 0.5);
+    # plt.xlabel("period");
+    # plt.ylabel("planet radius");
+    # plt.title("KOI FA Reliability, size = total reliability");
+    # plt.ylim([0, 2.5])
+    # plt.xlim([50, 400])
 
-    cbh = plt.colorbar(scf);
-    cbh.ax.set_ylabel("FA Reliability");
+    # cbh = plt.colorbar(scf);
+    # cbh.ax.set_ylabel("FA Reliability");
 
 
     dr25PC = mergedDr25Koi[mergedDr25Koi.koi_pdisposition == "CANDIDATE"]
@@ -317,77 +293,79 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     mergedDr25Koi = mergedDr25Koi[~np.isnan(mergedDr25Koi.corrected_prad)]
 
 
-    print("There are " + str(len(dr25PC)) + " PCs in " + str(len(dr25CleanStellarIso)) + " observed targets")
-    print("There are " + str(len(dr25FP)) + " FPs in " + str(len(dr25CleanStellarIso)) + " observed targets")
+    if verbose == True:
+        print("There are " + str(len(dr25PC)) + " PCs in " + str(len(dr25CleanStellarIso)) + " observed targets")
+        print("There are " + str(len(dr25FP)) + " FPs in " + str(len(dr25CleanStellarIso)) + " observed targets")
 
-    fig, ax = plt.subplots(figsize=(15,10));
-    scf = ax.scatter(dr25PC.koi_period, dr25PC.koi_max_mult_ev, cmap="viridis", 
-                     c=dr25PC.reliability, edgecolors='k', s=100*dr25PC.totalReliability, alpha = 0.5);
-    plt.xlabel("period");
-    plt.ylabel("MES");
-    plt.title("PC Reliability, size = total reliability");
-    #plt.ylim([7, 30])
-    #plt.xlim([50, 400])
+    if plots == True:
+        # fig, ax = plt.subplots(figsize=(15,10));
+        # scf = ax.scatter(dr25PC.koi_period, dr25PC.koi_max_mult_ev, cmap="viridis", 
+        #                  c=dr25PC.reliability, edgecolors='k', s=100*dr25PC.totalReliability, alpha = 0.5);
+        # plt.xlabel("period");
+        # plt.ylabel("MES");
+        # plt.title("PC Reliability, size = total reliability");
+        # #plt.ylim([7, 30])
+        # #plt.xlim([50, 400])
 
-    cbh = plt.colorbar(scf);
-    cbh.ax.set_ylabel("Reliability");
+        # cbh = plt.colorbar(scf);
+        # cbh.ax.set_ylabel("Reliability");
 
-    fig, ax = plt.subplots(figsize=(15,10));
-    scf = ax.scatter(dr25PC.koi_period, dr25PC.corrected_prad, cmap="viridis", 
-                     c=dr25PC.reliability, edgecolors='k', s=100*dr25PC.totalReliability, alpha = 0.8);
-    scf = ax.scatter(dr25PC.koi_period, dr25PC.corrected_prad, s=100*dr25PC.totalReliability, 
-                     c=dr25PC.reliability, facecolors='none', edgecolors='k', alpha = 0.8);
-    plt.yscale('log', nonposy='clip')
-    plt.xscale('log', nonposx='clip')
-    plt.xlabel("period");
-    plt.ylabel("planet radius");
-    plt.title("PC Reliability, size = reliability");
+        # fig, ax = plt.subplots(figsize=(15,10));
+        # scf = ax.scatter(dr25PC.koi_period, dr25PC.corrected_prad, cmap="viridis", 
+        #                  c=dr25PC.reliability, edgecolors='k', s=100*dr25PC.totalReliability, alpha = 0.8);
+        # scf = ax.scatter(dr25PC.koi_period, dr25PC.corrected_prad, s=100*dr25PC.totalReliability, 
+        #                  c=dr25PC.reliability, facecolors='none', edgecolors='k', alpha = 0.8);
+        # plt.yscale('log', nonposy='clip')
+        # plt.xscale('log', nonposx='clip')
+        # plt.xlabel("period");
+        # plt.ylabel("planet radius");
+        # plt.title("PC Reliability, size = reliability");
 
-    cbh = plt.colorbar(scf);
-    cbh.ax.set_ylabel("Reliability");
+        # cbh = plt.colorbar(scf);
+        # cbh.ax.set_ylabel("Reliability");
 
 
-    fig, ax = plt.subplots(figsize=(15,10));
-    scf = ax.scatter(dr25PC.koi_period, dr25PC.corrected_prad, cmap="viridis", 
-                     c=dr25PC.reliability, edgecolors='k', s=100*dr25PC.totalReliability, alpha = 0.5);
-    plt.xlabel("period", fontsize = 24);
-    plt.ylabel("corrected planet radius", fontsize = 24);
-    plt.title("PC Reliability, size = total reliability", fontsize = 24);
-    plt.ylim([0, 2.5])
-    plt.xlim([50, 400])
+        fig, ax = plt.subplots(figsize=(15,10));
+        scf = ax.scatter(dr25PC.koi_period, dr25PC.corrected_prad, cmap="viridis", 
+                         c=dr25PC.reliability, edgecolors='k', s=100*dr25PC.totalReliability, alpha = 0.5);
+        plt.xlabel("period", fontsize = 24);
+        plt.ylabel("corrected planet radius", fontsize = 24);
+        plt.title("PC Reliability, size = total reliability", fontsize = 24);
+        plt.ylim([rpmin, rpmax])
+        plt.xlim([pmin, pmax])
 
-    cbh = plt.colorbar(scf);
-    cbh.ax.set_ylabel("Reliability");
-    plt.savefig("pcReliability.eps",bbox_inches='tight')
+        cbh = plt.colorbar(scf);
+        cbh.ax.set_ylabel("Reliability");
+        plt.savefig("pcReliability_correctedrp.pdf",bbox_inches='tight')
 
-    plt.plot([200, 200], [1, 2], color='k', linestyle='--', linewidth=1)
-    plt.plot([50, 200], [1, 1], color='k', linestyle='--', linewidth=1)
-    plt.plot([50, 200], [2, 2], color='k', linestyle='--', linewidth=1)
+        # plt.plot([200, 200], [1, 2], color='k', linestyle='--', linewidth=1)
+        # plt.plot([50, 200], [1, 1], color='k', linestyle='--', linewidth=1)
+        # plt.plot([50, 200], [2, 2], color='k', linestyle='--', linewidth=1)
 
-    fig, ax = plt.subplots(figsize=(15,10));
-    scf = ax.scatter(dr25PC.koi_period, dr25PC.koi_prad, cmap="viridis", 
-                     c=dr25PC.reliability, edgecolors='k', s=100*dr25PC.totalReliability, alpha = 0.5);
-    plt.xlabel("period", fontsize = 24);
-    plt.ylabel("DR25 planet radius", fontsize = 24);
-    plt.title("PC Reliability, size = total reliability", fontsize = 24);
-    plt.ylim([0, 2.5])
-    plt.xlim([50, 400])
+        fig, ax = plt.subplots(figsize=(15,10));
+        scf = ax.scatter(dr25PC.koi_period, dr25PC.koi_prad, cmap="viridis", 
+                         c=dr25PC.reliability, edgecolors='k', s=100*dr25PC.totalReliability, alpha = 0.5);
+        plt.xlabel("period", fontsize = 24);
+        plt.ylabel("DR25 planet radius", fontsize = 24);
+        plt.title("PC Reliability, size = total reliability", fontsize = 24);
+        plt.ylim([rpmin, rpmax])
+        plt.xlim([pmin, pmax])
 
-    cbh = plt.colorbar(scf);
-    cbh.ax.set_ylabel("Reliability");
-    plt.savefig("pcReliability.eps",bbox_inches='tight')
+        cbh = plt.colorbar(scf);
+        cbh.ax.set_ylabel("Reliability");
+        plt.savefig("pcReliability.pdf",bbox_inches='tight')
 
-    plt.plot([200, 200], [1, 2], color='k', linestyle='--', linewidth=1)
-    plt.plot([50, 200], [1, 1], color='k', linestyle='--', linewidth=1)
-    plt.plot([50, 200], [2, 2], color='k', linestyle='--', linewidth=1)
+        # plt.plot([200, 200], [1, 2], color='k', linestyle='--', linewidth=1)
+        # plt.plot([50, 200], [1, 1], color='k', linestyle='--', linewidth=1)
+        # plt.plot([50, 200], [2, 2], color='k', linestyle='--', linewidth=1)
 
 
     dr25PcInRange = dr25PC[(dr25PC.koi_period>50)&(dr25PC.koi_period<400)&(dr25PC.corrected_prad>0)&(dr25PC.corrected_prad<2.5)]
 
 
-    plt.hist(dr25PC.corrected_prad/dr25PC.koi_prad, 100);
+    # plt.hist(dr25PC.corrected_prad/dr25PC.koi_prad, 100);
 
-    plt.hist(dr25CleanStellarIso.radius[dr25CleanStellarIso.radius<2]/dr25CleanStellarIso.radius_DR25[dr25CleanStellarIso.radius<2], 100);
+    # plt.hist(dr25CleanStellarIso.radius[dr25CleanStellarIso.radius<2]/dr25CleanStellarIso.radius_DR25[dr25CleanStellarIso.radius<2], 100);
 
 
     dr25PC.to_csv("koiCatalogs/dr25_{}_PCs.csv".format(spt), index=False)

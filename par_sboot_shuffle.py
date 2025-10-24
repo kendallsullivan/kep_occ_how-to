@@ -6,15 +6,18 @@ import sys
 
 output_prefix = sys.argv[1]
 pcCatalog = sys.argv[2] #'koiCatalogs/dr25_FGK_PCs_B20_ruwe.csv'
+pmin, pmax, period_grid = sys.argv[3], sys.argv[4], sys.argv[5]
+rpmin, rpmax, rp_grid = sys.argv[6], sys.argv[7], sys.argv[8]
+niter = sys.argv[9]
 
-x = np.linspace(np.log10(1), np.log10(500), num=100)
-y = np.linspace(np.log10(1), np.log10(10), num=100)
+x = np.linspace(np.log10(pmin), np.log10(pmax), num=period_grid-1)
+y = np.linspace(np.log10(rpmin), np.log10(rpmax), num=period_grid-1)
 xg, yg = np.meshgrid(x, y, indexing='ij')
 
-period_rng = (1, 500)
-n_period = 101
-rp_rng = (1, 10)
-n_rp = 101
+period_rng = (pmin, pmax)
+n_period = period_grid
+rp_rng = (rpmin, rpmax)
+n_rp = rp_grid
 
 whichRadii = "corrected"
 def getRadii(catalog):
@@ -104,5 +107,5 @@ def parallel_monte_carlo(iter=100, rel=True):
 
 if __name__=="__main__":
 
-	np.save(output_prefix + "_5000.npy", parallel_monte_carlo(iter=5000, rel=True))
+	np.save(output_prefix + "_{}.npy".format(niter), parallel_monte_carlo(iter=niter, rel=True))
 	# parallel_monte_carlo(iter=5, rel=True)
