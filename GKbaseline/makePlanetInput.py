@@ -415,7 +415,7 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
 def main(argv)    
     try:
         argument_list = argv[1:]
-        short_options = 'E:F:i:v:s:p:P:r:R:' #model name for FP Eff, model name for FP Rate, plots y/n, verbose y/n, spt range, pmin, pmax, rpmin, rpmax
+        short_options = 'E:F:i:v:t:p:P:r:R:' #model name for FP Eff, model name for FP Rate, plots y/n, verbose y/n, spt range, pmin, pmax, rpmin, rpmax
         long_options = 'fpeff:fprate:plots:verbose:spt:pmin:pmax:rpmin:rpmax:' 
         arguments, values = getopt.getopt(argument_list, short_options, long_options)
 

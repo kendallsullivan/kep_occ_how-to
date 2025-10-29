@@ -292,7 +292,7 @@ def main(argv):
     # set up a try/except for reading in initialization requirements
     try:
         argument_list = argv[1:]
-        short_options = 'p:v:s:t:y:o:' #plots y/n, verbose y/n, savepath for files, spectral types to include, lower age limit, upper age limit
+        short_options = 'i:v:s:t:y:o:' #plots y/n, verbose y/n, savepath for files, spectral types to include, lower age limit, upper age limit
         long_options = 'plots:verbose:savepath:spt:age_lower:age_upper:' 
         arguments, values = getopt.getopt(argument_list, short_options, long_options)
 
