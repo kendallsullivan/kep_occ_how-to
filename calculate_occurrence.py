@@ -20,12 +20,10 @@ old_age = 19.5 #Gyr
 
 # for the vetting completeness
 vettingModel = 'logisticX0xRotatedLogisticY02'
-pmin = 1
-pmax = 400
-rpmin = 0.5
-rpmax = 15
-vetMesMin = 0
-vetMesMax = 30
+pmin = 1 # days
+pmax = 400 # days 
+rpmin = 0.5 # Rearth
+rpmax = 15 # Rearth
 vetNwalkers = 200
 vetNsteps = 5000
 
@@ -34,8 +32,6 @@ ncores = os.cpu_count()
 
 # for FP effectiveness
 fpEffModel = 'rotatedLogisticX0'
-FPmesMin = 7
-FPmesMax = 30
 FPNwalkers = 100
 FPNsteps = 10000
 FPNfits = 100
