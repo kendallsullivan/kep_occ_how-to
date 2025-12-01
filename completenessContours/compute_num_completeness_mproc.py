@@ -120,7 +120,7 @@ def nas_multi_grid_dr25(worker_id, n_workers, min_period, max_period,
     tbhdu = fits.BinTableHDU.from_columns(cols)
     hdulist.append(tbhdu)
     # Write out fits file
-    hdulist.writeto(output_filename, clobber=True)
+    hdulist.writeto(output_filename)
     hdulist.close()
     # Gzip fits file
     f_in = open(output_filename, 'rb')

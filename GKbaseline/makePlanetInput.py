@@ -7,13 +7,14 @@ from astropy.table import Table, vstack
 import pickle
 from mpl_toolkits.mplot3d import Axes3D  
 from matplotlib import cm
-import sys
-sys.path.insert(0, '..')
+import sys,os
+sys.path.insert(0, os.getcwd())
 import dr25Models as funcModels
 import requests
-from cStringIO import StringIO
+import getopt
+from setuptools._distutils.util import strtobool
 
-def computeReliabiltyPosterior(xp, yp, eSamples, oSamples):
+def computeReliabiltyPosterior(xp, yp, eSamples, oSamples, fpEffXRange, fpEffYRange, fpEffTheta, fpEffModel, obsXRange, obsYRange, obsTheta, obsModel):
     r = np.zeros(np.shape(eSamples)[0])
     for i in range(np.shape(eSamples)[0]):
         e = funcModels.evaluateModel(xp, yp, eSamples[i,:], fpEffXRange, fpEffYRange, fpEffModel)
@@ -136,9 +137,9 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     eSamples = np.load("binEffPosteriors_" + str(fpEffModel) + ".npy");
     oSamples = np.load("binObsPosteriors_" + str(obsModel) + ".npy");
 
-    r1, f1 = computeReliabiltyPosterior(200., 25., eSamples, oSamples)
-    r2, f2 = computeReliabiltyPosterior(365., 10., eSamples, oSamples)
-    r3, f3 = computeReliabiltyPosterior(365., 8., eSamples, oSamples)
+    r1, f1 = computeReliabiltyPosterior(200., 25., eSamples, oSamples, fpEffXRange, fpEffYRange, fpEffTheta, fpEffModel, obsXRange, obsYRange, obsTheta, obsModel)
+    r2, f2 = computeReliabiltyPosterior(365., 10., eSamples, oSamples, fpEffXRange, fpEffYRange, fpEffTheta, fpEffModel, obsXRange, obsYRange, obsTheta, obsModel)
+    r3, f3 = computeReliabiltyPosterior(365., 8., eSamples, oSamples, fpEffXRange, fpEffYRange, fpEffTheta, fpEffModel, obsXRange, obsYRange, obsTheta, obsModel)
 
     ymax = 10000
     if plots == True:
@@ -154,7 +155,7 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
         plt.ylim(0, ymax)
         plt.xlim(0, 1.2)
         plt.tick_params(labelsize = 18)
-        plt.xlabel(r"$R_\mathrm{FA}$", fontSize = 24);
+        plt.xlabel(r"$R_\mathrm{FA}$", fontsize = 24);
 
         plt.savefig("reliabilityExamples.pdf",bbox_inches='tight')
 
@@ -173,16 +174,16 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
             r.raise_for_status()
         fh = StringIO(r.content)
         dr25Koi = pd.read_csv(fh, dtype={"kepoi_name":str})
-        dr25Koi.to_csv("koiCatalogs/dr25_kois_archive.txt", index=False)
+        dr25Koi.to_csv("GKbaseline/koiCatalogs/dr25_kois_archive.txt", index=False)
     else:
-        dr25Koi = pd.read_csv("koiCatalogs/dr25_kois_archive.txt", dtype={"kepoi_name":str})
+        dr25Koi = pd.read_csv("GKbaseline/koiCatalogs/dr25_kois_archive.txt", dtype={"kepoi_name":str})
 
     print("Loaded " + str(len(dr25Koi)) + " KOIs")
 
 
     # restrict the population to stars in the Berger catalog
 
-    dr25CleanStellarIso = pd.read_csv("../stellarCatalogs/dr25_stellar_supp_gaia_clean_{}.txt".format(spt))
+    dr25CleanStellarIso = pd.read_csv(os.getcwd() + "/stellarCatalogs/dr25_stellar_supp_gaia_clean_{}.txt".format(spt))
     dr25Koi = dr25Koi[dr25Koi.kepid.isin(dr25CleanStellarIso.kepid)]
     dr25Koi = dr25Koi.reset_index(drop=True)
     if verbose == True:
@@ -223,7 +224,7 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     # plt.xlim([50, 400])
 
 
-    dr25Fpp = ascii.read("../data/q1_q17_dr25_koifpp.txt")
+    dr25Fpp = ascii.read(os.getcwd() + "/data/q1_q17_dr25_koifpp.txt")
     dr25FppPd = dr25Fpp.to_pandas()
 
 
@@ -246,7 +247,7 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     mergedDr25Koi.reliability[mergedDr25Koi.reliability < 0.] = 0.
 
     plt.hist(mergedDr25Koi.koi_score, 40);
-    plt.yscale('log', nonposy='clip')
+    # plt.yscale('log', nonposy='clip')
 
     np.sum(np.isnan(mergedDr25Koi.fpp_prob) & mergedDr25Koi.koi_period > 50)
 
@@ -368,8 +369,8 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     # plt.hist(dr25CleanStellarIso.radius[dr25CleanStellarIso.radius<2]/dr25CleanStellarIso.radius_DR25[dr25CleanStellarIso.radius<2], 100);
 
 
-    dr25PC.to_csv("koiCatalogs/dr25_{}_PCs.csv".format(spt), index=False)
-    mergedDr25Koi.to_csv("koiCatalogs/dr25_{}_KOIs.csv".format(spt), index=False)
+    dr25PC.to_csv(os.getcwd() + "/GKbaseline/koiCatalogs/dr25_{}_PCs.csv".format(spt), index=False)
+    mergedDr25Koi.to_csv(os.getcwd() + "/GKbaseline/koiCatalogs/dr25_{}_KOIs.csv".format(spt), index=False)
 
     if plots == True:
         fig, ax = plt.subplots(figsize=(15,10));
@@ -386,15 +387,16 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
         plt.ylim([0, 2.5])
         plt.xlim([50, 400])
         plt.savefig('radius_change.pdf')
-
+        plt.clf()
 
         plt.hist(dr25PC.koi_score, 40);
-        plt.yscale('log', nonposy='clip')
+        # plt.yscale('log', nonposy='clip')
         plt.title("PC score distribution")
         plt.savefig('pc_score_dist.pdf')
 
+        plt.clf()
         plt.hist(dr25FP.koi_score, 40, alpha=0.5);
-        plt.yscale('log', nonposy='clip')
+        # plt.yscale('log', nonposy='clip')
         plt.title("FP score distribution")
         plt.savefig('fp_score_dist.pdf')
 
@@ -412,7 +414,7 @@ def makePlanetInput(fpEffModel = 'rotatedLogisticX0', obsModel = 'rotatedLogisti
     return
 
 
-def main(argv)    
+def main(argv):
     try:
         argument_list = argv[1:]
         short_options = 'E:F:i:v:t:p:P:r:R:' #model name for FP Eff, model name for FP Rate, plots y/n, verbose y/n, spt range, pmin, pmax, rpmin, rpmax
@@ -444,7 +446,7 @@ def main(argv)
         rpmax = 15
 
     # check the spectral type inputs are valid
-    test_spt = [s.lower() not in 'fgkm' for s in spt]
+    test_spt = [s.upper() not in 'FGKM' for s in spt]
 
     # if they are not, throw an error and exit
     if any([s == True for s in test_spt]):

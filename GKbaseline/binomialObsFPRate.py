@@ -28,18 +28,19 @@ import scipy.special as spec
 import pandas as pd
 from astropy.io import ascii
 from astropy.table import Table, vstack
-import sys
-sys.path.insert(0, '..')
+import sys,os
+sys.path.insert(0, os.getcwd())
 import dr25Models as funcModels
 import scipy.optimize as op
 import emcee
 import corner
 from mpl_toolkits.mplot3d import Axes3D  
 from matplotlib import cm
-from ipywidgets import FloatProgress
-from IPython.display import display
 import os.path
 import pickle
+import getopt
+from setuptools._distutils.util import strtobool
+
 
 
 def drawHeatMap(dataArray, imageSize, x, y, nData=[], colorBarLabel="", textOn=True, forceInt=True):
@@ -93,7 +94,7 @@ def drawHeatMap(dataArray, imageSize, x, y, nData=[], colorBarLabel="", textOn=T
     ax.tick_params(axis = "both", labelsize = 12)
     im_ratio = float(da.shape[0])/da.shape[1] 
     cbh = plt.colorbar(im,fraction=0.024*im_ratio, pad=0.02)
-    cbh.ax.set_ylabel(colorBarLabel, fontSize = 16)
+    cbh.ax.set_ylabel(colorBarLabel, fontsize = 16)
 
     return
 
@@ -190,11 +191,13 @@ def lnBinprob(theta, data, model):
     return lp + lnBinlike(theta, data, model)
 
 
-def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarType = 'GK', rpmin = 0.5, rpmax = 15, pmin = 1, pmax = 400, mesmin = 7, mesmax = 30, verbose = True, plots = True, nwalkers = 100, nsteps = 1e4, nfits = 100)
+def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarType = 'GK', rpmin = 0.5, rpmax = 15, pmin = 1, pmax = 400, mesmin = 7, mesmax = 30, verbose = True, plots = True, nwalkers = 100, nsteps = 1e4, nfits = 100):
 
-    dataLoc = "../data/"
+    scoreCut = 0
 
-    starlist = "../stellarCatalogs/dr25_stellar_supp_gaia_clean_" + stellarType + ".txt"
+    dataLoc = os.getcwd() + "/data/"
+
+    starlist = os.getcwd() + "/stellarCatalogs/dr25_stellar_supp_gaia_clean_" + stellarType + ".txt"
     kic = pd.read_csv(starlist)
 
     obsTceList = dataLoc + "kplr_dr25_obs_tces.txt"
@@ -226,8 +229,8 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
 
     # Restrict to the desired radius and period range
     spIndex = np.where(np.all([
-        obsTces['Rp']>rpMin,obsTces['Rp']<rpMax,\
-        obsTces['period']>periodMin,obsTces['period']<periodMax], axis=0))
+        obsTces['Rp']>rpmin,obsTces['Rp']<rpmax,\
+        obsTces['period']>pmin,obsTces['period']<pmax], axis=0))
     spObsTces = obsTces[spIndex]
 
     if verbose == True:
@@ -278,12 +281,12 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.figure(figsize=(10,5))
         plt.plot(spObsPcs['period'], spObsPcs['MES'], "o",
                 spObsFps['period'], spObsFps['MES'], ".")
-        plt.ylim(mesMin,mesMax)
-        plt.xlim(periodMin,periodMax)
+        plt.ylim(mesmin,mesmax)
+        plt.xlim(pmin,pmax)
         plt.legend(("obs PCs", "obs FPs"))
         plt.ylabel('MES', fontsize = 16)
         plt.xlabel('Period', fontsize = 16)
-        plt.savefig('obs_PC_FP.pdf')
+        plt.savefig(os.getcwd() + '/GKbaseline/obs_PC_FP.pdf')
 
 
     # Bin the data so we have n TCEs and c FPs in each bin.
@@ -292,8 +295,8 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
 
     p0 = pmin
     pEnd = pmax
-    m0 = mesMin
-    mEnd = mesMax
+    m0 = mesmin
+    mEnd = mesmax
 
     # make the period-mes grid
     NPeriod = int((pEnd - p0)/dPeriod)
@@ -337,19 +340,19 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.ylabel('MES', fontsize = 16)
         plt.xlabel('Period', fontsize = 16)
         plt.title("All observed TCEs")
-        plt.savefig("obsFPNTces.eps",bbox_inches='tight')
+        plt.savefig(os.getcwd() + "/GKbaseline/obsFPNTces.pdf",bbox_inches='tight')
 
         drawHeatMap(obsPcGrid, (15,15), cellPeriod, cellMes)           
         plt.title("Observed PCs")
         plt.ylabel('MES', fontsize = 16)
         plt.xlabel('Period', fontsize = 16)
-        plt.savefig('obs_PC_grid.pdf')
+        plt.savefig(os.getcwd() + '/GKbaseline/obs_PC_grid.pdf')
 
         drawHeatMap(obsFpGrid, (15,15), cellPeriod, cellMes)           
         plt.title("Observed FPs")
         plt.ylabel('MES', fontsize = 16)
         plt.xlabel('Period', fontsize = 16)
-        plt.savefig('obs_FP_grid.pdf')
+        plt.savefig(os.getcwd() + '/GKbaseline/obs_FP_grid.pdf')
 
 
     # Compute the PC and FC fractions in each cell to get a sense of what the fractions look like.  These are not used in the inference.
@@ -363,7 +366,7 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.title("Observed PC Fraction (%)")
         plt.ylabel('MES', fontsize = 16)
         plt.xlabel('Period', fontsize = 16)
-        plt.savefig('obs_PC_fraction.pdf')
+        plt.savefig(os.getcwd() + '/GKbaseline/obs_PC_fraction.pdf')
 
     obsFpFrac = np.zeros(np.shape(obsTceGrid))
     obsFpFrac[obsTceGrid>minTcePerCell] = obsFpGrid[obsTceGrid>minTcePerCell]/obsTceGrid[obsTceGrid>minTcePerCell]
@@ -373,7 +376,7 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.ylabel('MES', fontsize = 16)
         plt.xlabel('Period', fontsize = 16)
         plt.title("Observed FP Fraction (%)")
-        plt.savefig("obs_FP_fraction.pdf",bbox_inches='tight')
+        plt.savefig(os.getcwd() + "/GKbaseline/obs_FP_fraction.pdf",bbox_inches='tight')
 
 
 
@@ -382,7 +385,7 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
     nObsTce = obsTceGrid.flatten()
 
     # convert to homogeneous coordinates on unit square [0,1]
-    cellX, cellY = funcModels.normalizeRange(cellPeriod, cellMes, [periodMin, periodMax], [mesMin, mesMax])
+    cellX, cellY = funcModels.normalizeRange(cellPeriod, cellMes, [pmin, pmax], [mesmin, mesmax])
     gridShape = np.shape(cellX)
     dx = 1./gridShape[0]
     dy = 1./gridShape[1]
@@ -507,14 +510,14 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.figure(figsize=(10,5))
         for i in range(0,ndim):
             plt.subplot(ndim,1,i+1)
-            plt.plot(np.transpose(sampler.chain[:, :, i]), color="k", alpha=0.1)
+            plt.plot(np.transpose(sampler.chain[:, :, i]), color="k", alpha=0.1, rasterized = True)
             plt.ylabel(modelLabels[i])
-        plt.savefig('FPRate_chains.pdf')
+        plt.savefig(os.getcwd() + '/GKbaseline/FPRate_chains.pdf')
         
 
 
         fig = corner.corner(obsSamples, labels = modelLabels, label_kwargs = {"fontsize": 32}, truths = fpFitTheta)
-        plt.savefig("obsFP_corner.pdf",bbox_inches='tight')
+        plt.savefig(os.getcwd() + "/GKbaseline/obsFP_corner.pdf",bbox_inches='tight')
 
         fig = plt.figure(figsize=plt.figaspect(0.3))
         ax = fig.add_subplot(1, 3, 1, projection='3d')
@@ -545,7 +548,7 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.xlabel("period")
         plt.ylabel("MES")
 
-        plt.savefig('rate_models_FPRate.pdf')
+        plt.savefig(os.getcwd() + '/GKbaseline/rate_models_FPRate.pdf')
 
 
         fig, ax = plt.subplots(figsize=(15,10))
@@ -553,13 +556,13 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         CS = ax.contour(cellPeriod, cellMes, Z, colors='k')
         ax.clabel(CS, inline=1, fontsize=18)
         scf = ax.scatter(cellPeriod[obsTceGrid>0], cellMes[obsTceGrid>0], cmap="cividis", c=obsFpFrac[obsTceGrid>0], s=5*obsTceGrid[obsTceGrid>0], alpha = 0.5)
-        plt.xlabel("period", fontSize = 24)
-        plt.ylabel("MES", fontSize = 24)
+        plt.xlabel("period", fontsize = 24)
+        plt.ylabel("MES", fontsize = 24)
         cbh = plt.colorbar(scf)
-        cbh.ax.set_ylabel("Measured Rate", fontSize = 24)
+        cbh.ax.set_ylabel("Measured Rate", fontsize = 24)
         plt.tick_params(labelsize = 16)
         plt.title("Observed FP Rate.  Size of marker = # of TCEs in cell")
-        plt.savefig("obsFPContours.pdf",bbox_inches='tight')
+        plt.savefig(os.getcwd() + "/GKbaseline/obsFPContours.pdf",bbox_inches='tight')
 
 
     # Reconstruct observed FP rates from the fit to compare with data.
@@ -575,7 +578,7 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.title('reconstructed Observed FPs from the fit')
         plt.ylabel('MES')
         plt.xlabel('Period')
-        plt.saveefig('reconstructed_FPs.pdf')
+        plt.savefig(os.getcwd() + '/GKbaseline/reconstructed_FPs.pdf')
 
         fitFrac = np.zeros(np.shape(obsTceGrid))
         fitFrac[obsTceGrid>minTcePerCell] = fitGrid[obsTceGrid>minTcePerCell]/obsTceGrid[obsTceGrid>minTcePerCell]
@@ -583,15 +586,15 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.title('reconstructed Observed FP rate from the fit')
         plt.ylabel('MES')
         plt.xlabel('Period')
-        plt.savefig('reconstructed_FP_rate.pdf')
+        plt.savefig(os.getcwd() + '/GKbaseline/reconstructed_FP_rate.pdf')
 
 
     nFits = nfits
     fitGrid = np.zeros([np.shape(obsTceGrid)[0],np.shape(obsTceGrid)[1],nFits])
     sidx = [0]*nFits
-    progress = FloatProgress(min=0, max=nFits)
-    if verbose == True:
-        display(progress)
+    # progress = FloatProgress(min=0, max=nFits)
+    # if verbose == True:
+    #     display(progress)
 
 
     for f in range(nFits):
@@ -604,7 +607,7 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
                 if rm > 1:
                     rm = 1
                 fitGrid[(p,m,f)] = np.random.binomial(obsTceGrid[(p,m)], rm, 1)
-        progress.value += 1
+        # progress.value += 1
         
     meanFit = np.mean(fitGrid, 2)
     stdFit = np.std(fitGrid, 2)
@@ -618,7 +621,7 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.ylabel('MES')
         plt.xlabel('Period')
         plt.title("Mean Observed FP rate reconstructed from the fit")
-        plt.savefig("obsFPMean.pdf",bbox_inches='tight')
+        plt.savefig(os.getcwd() + "/GKbaseline/obsFPMean.pdf",bbox_inches='tight')
 
 
     stdFrac = np.zeros(np.shape(obsTceGrid))
@@ -630,7 +633,7 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.ylabel('MES')
         plt.xlabel('Period')
         plt.title("Fractional standard deviation of the Observed FP rate reconstructed from the fit")
-        plt.savefig("obsFPStd.pdf",bbox_inches='tight')
+        plt.savefig(os.getcwd() + "/GKbaseline/obsFPStd.pdf",bbox_inches='tight')
 
     fitDiff = fitFracMean - obsFpFrac
     fitDiffNorm =np.zeros(fitDiff.shape)
@@ -641,14 +644,14 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         plt.title("Residual from mean")
         plt.ylabel('MES', fontsize = 16)
         plt.xlabel('Period', fontsize = 16)
-        plt.savefig('FP_residual_from_mean_frac.pdf')
+        plt.savefig(os.getcwd() + '/GKbaseline/FP_residual_from_mean_frac.pdf')
 
         drawHeatMap(np.round(fitDiffNorm, 2), (15,15), cellPeriod, cellMes, nData = obsTceGrid, 
                     colorBarLabel="Mean Residual (in standard deviations)", forceInt = False) 
         plt.ylabel('MES', fontsize = 16)
         plt.xlabel('Period', fontsize = 16)
         plt.title("Residual from mean (in standard deviations)")
-        plt.savefig("obsFPMeanResid_std.pdf",bbox_inches='tight')
+        plt.savefig(os.getcwd() + "/GKbaseline/obsFPMeanResid_std.pdf",bbox_inches='tight')
 
 
     fname = "obsFpTable.pkl"
@@ -684,8 +687,8 @@ def calcBinomialFPRate(model = 'rotatedLogisticX0', path = os.getcwd(), stellarT
         print(mctIndex)
     modelComparisonTable["medianMCMCTheta"][mctIndex] = fpFitTheta
     modelComparisonTable["maxLikelihoodTheta"][mctIndex] = maxLikelihoodResult
-    modelComparisonTable["periodRange"][mctIndex] = [periodMin, periodMax]
-    modelComparisonTable["mesRange"][mctIndex] = [mesMin, mesMax]
+    modelComparisonTable["periodRange"][mctIndex] = [pmin, pmax]
+    modelComparisonTable["mesRange"][mctIndex] = [mesmin, mesmax]
 
     modelComparisonTable.to_pickle(fname)
 
@@ -707,7 +710,7 @@ def main(argv):
         plots = strtobool(str(arguments[1][1]))
         verbose = strtobool(str(arguments[2][1]))
         savepath = arguments[3][1] + '/'
-        spt = arguments[4][1].lower()
+        spt = arguments[4][1].upper()
         pmin = float(arguments[5][1])
         pmax = float(arguments[6][1])
         rpmin = float(arguments[7][1])
@@ -715,8 +718,8 @@ def main(argv):
         nwalkers = int(arguments[9][1])
         nsteps = int(arguments[10][1])
         nfits = int(arguments[11][1])
-        mesMin = 7
-        mesMax = 30
+        mesmin = 7
+        mesmax = 30
 
     except:
         print('No inputs given, running with default settings: model = rotatedLogisticX0, plots = True, verbose = True, savepath = current working directory, spt = \'GK\', min. period = 1 d, max period = 400 d, min Rp = 0.5 Re, max Rp = 15 Re, nwalkers = 100, nsteps = 10000, nfits = 100. The code always uses MES values from 7-30.')
@@ -725,19 +728,19 @@ def main(argv):
         plots = True
         verbose = True
         savepath = os.getcwd() + '/'
-        spt = 'GK'.lower()
+        spt = 'GK'.upper()
         pmin = 1
         pmax = 400
         rpmin = 0.5
         rpmax = 15
-        mesMin = 7
-        mesMax = 30
+        mesmin = 7
+        mesmax = 30
         nwalkers = 100
         nsteps = 10000
         nfits = 100
 
     # check the spectral type inputs are valid
-    test_spt = [s not in 'fgkm' for s in spt]
+    test_spt = [s not in 'FGKM' for s in spt]
 
     # if they are not, throw an error and exit
     if any([s == True for s in test_spt]):
@@ -756,9 +759,9 @@ def main(argv):
     # print out the running statement 
     print('Assessing vetting completeness with the following settings: model = {}, plots = {}, verbose = {}, savepath = {}, spectral types = {}, \
         P min = {} d, P max = {} d, Rp min = {} Re, Rp max = {} Re, MES min = {}, MES max = {}, nwalkers = {}, nsteps = {}, nfits = {}'.\
-        format(model, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, mesMin, mesMax, nwalkers, nsteps, nfits))
+        format(model, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, mesmin, mesmax, nwalkers, nsteps, nfits))
 
-    calcBinomialFPRate(model = model, path = savepath, stellarType = spt, rpmin = rpmin, rpmax = rpmax, pmin = pmin, pmax = pmax, mesmin = mesMin, mesmax = mesMax, verbose = verbose, plots = plots, nwalkers = nwalkers, nsteps = nsteps, nfits = nfits)
+    calcBinomialFPRate(model = model, path = savepath, stellarType = spt, rpmin = rpmin, rpmax = rpmax, pmin = pmin, pmax = pmax, mesmin = mesmin, mesmax = mesmax, verbose = verbose, plots = plots, nwalkers = nwalkers, nsteps = nsteps, nfits = nfits)
     return
 
 

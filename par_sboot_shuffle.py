@@ -6,9 +6,9 @@ import sys
 
 output_prefix = sys.argv[1]
 pcCatalog = sys.argv[2] #'koiCatalogs/dr25_FGK_PCs_B20_ruwe.csv'
-pmin, pmax, period_grid = sys.argv[3], sys.argv[4], sys.argv[5]
-rpmin, rpmax, rp_grid = sys.argv[6], sys.argv[7], sys.argv[8]
-niter = sys.argv[9]
+pmin, pmax, period_grid = float(sys.argv[3]), float(sys.argv[4]), int(sys.argv[5])
+rpmin, rpmax, rp_grid = float(sys.argv[6]), float(sys.argv[7]), int(sys.argv[8])
+niter = int(sys.argv[9])
 
 x = np.linspace(np.log10(pmin), np.log10(pmax), num=period_grid-1)
 y = np.linspace(np.log10(rpmin), np.log10(rpmax), num=period_grid-1)
@@ -88,20 +88,20 @@ def _parallel_mc(iter=100, rel=True):
 	pool = mp.Pool(4) # change this
 
 	future_res = np.array([pool.apply_async(sample, (rel,)) for _ in range(iter)])
-	print(future_res.shape)
+	# print(future_res.shape)
 	res = np.array([f.get() for f in future_res])
-	print(res.shape)
+	# print(res.shape)
 
 	return res
 
 def parallel_monte_carlo(iter=100, rel=True):
 	samples = _parallel_mc(iter, rel)
-	print(samples.shape)
-	print(samples[0].shape)
+	# print(samples.shape)
+	# print(samples[0].shape)
 
 	o = np.average(samples, axis=0)
 	#o_std = np.std(samples, axis=0)
-	print(o.shape)
+	# print(o.shape)
 
 	return samples
 

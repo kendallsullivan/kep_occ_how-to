@@ -26,18 +26,18 @@ import scipy.special as spec
 import pandas as pd
 from astropy.io import ascii
 from astropy.table import Table, vstack
-import sys
-sys.path.insert(0, '..')
+import sys, os
+sys.path.insert(0, os.getcwd())
 import dr25Models as funcModels
 import scipy.optimize as op
 import emcee
 import corner
-from ipywidgets import FloatProgress
-from IPython.display import display
 from mpl_toolkits.mplot3d import Axes3D  
 from matplotlib import cm
 import os.path
 import pickle
+import getopt
+from setuptools._distutils.util import strtobool
 
 
 def drawHeatMap(dataArray, imageSize, x, y, nData=[], colorBarLabel="", textOn=True, forceInt=True):
@@ -91,7 +91,7 @@ def drawHeatMap(dataArray, imageSize, x, y, nData=[], colorBarLabel="", textOn=T
 	ax.tick_params(axis = "both", labelsize = 12)
 	im_ratio = float(da.shape[0])/da.shape[1] 
 	cbh = plt.colorbar(im,fraction=0.024*im_ratio, pad=0.02)
-	cbh.ax.set_ylabel(colorBarLabel, fontSize = 16)
+	cbh.ax.set_ylabel(colorBarLabel, fontsize = 16)
 
 	# ax.invert_yaxis()
 	return
@@ -214,12 +214,14 @@ def lnBinprob(theta, data, model):
 
 def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(), stellarType = 'GK', rpmin = 0.5, rpmax = 15, pmin = 1, pmax = 400, mesmin = 7, mesmax = 30, verbose = True, plots = True, nwalkers = 100, nsteps = 1e4, nfits = 100):
 
+	scoreCut = 0.0
+
 	# Then we load our data, which consists of the stellar catalog, observed TCEs, inverted TCEs and scrambled TCEs.  We convert the tables to Pandas for manipulation.
 
-	dataLoc = "../data/"
+	dataLoc = os.getcwd() + "/data/"
 
 	# starlist = dataLoc + "dr25_stellar_updated_feh_" + stellarType + ".txt"
-	starlist = "../stellarCatalogs/dr25_stellar_supp_gaia_clean_" + stellarType.upper() + ".txt"
+	starlist = os.getcwd() + "/stellarCatalogs/dr25_stellar_supp_gaia_clean_" + stellarType.upper() + ".txt"
 	kic = pd.read_csv(starlist)
 
 	invList = dataLoc + "kplr_dr25_inv_tces.txt"
@@ -288,6 +290,12 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		print("length of invTces = " + str(len(invTces)))
 		print("length of scrTces = " + str(len(scrTces)))
 
+	#Maybe subsample by a factor of three - we don't do this by default but it's in Steve's tutorial
+	subSample = np.random.rand(len(scrTces))
+	# scrTcesSub = scrTces[subSample < 1./3]
+	scrTcesSub = scrTces
+	print("length of scrTcesSub = " + str(len(scrTcesSub)))
+
 	# Create the final list of synthetic FPs by concatanating the inverted and subset of the scrambled lists.
 	syntheticTrueFps = vstack([invTces,invTces,invTces,scrTcesSub])
 	if verbose == True:
@@ -320,12 +328,12 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		# plt.subplot(2,2,1)
 		plt.plot(spSyntheticFps['period'], spSyntheticFps['MES'], ".", 
 				spSyntheticPcs['period'], spSyntheticPcs['MES'], "*")
-		plt.ylim(mesMin,mesMax)
-		plt.xlim(periodMin,periodMax)
+		plt.ylim(mesmin,mesmax)
+		plt.xlim(pmin,pmax)
 		plt.legend(("inv/scr FPs", "inv/scr PC"))
 		plt.ylabel('MES')
 		plt.xlabel('Period')
-		plt.savefig('inverted_scrambled.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/inverted_scrambled.pdf')
 
 
 	# Bin the data so we have n TCEs and c FPs in each bin.
@@ -378,19 +386,19 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
 		plt.title("All Inverted/Scrambled TCEs")
-		plt.savefig("fpEffNTces.pdf",bbox_inches='tight')
+		plt.savefig(os.getcwd() + "/GKbaseline/fpEffNTces.pdf",bbox_inches='tight')
 		
 		drawHeatMap(pcGrid, (15,15), cellPeriod, cellMes)           
 		plt.title("Inverted/Scrambled PCs")
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig('fpEffPCs.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/fpEffPCs.pdf')
 
 		drawHeatMap(fpGrid, (15,15), cellPeriod, cellMes)           
 		plt.title("Inverted/Scrambled FPs")
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig('fpEffFPs.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/fpEffFPs.pdf')
 
 
 
@@ -404,16 +412,16 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		plt.title("Inverted/Scrambled PC Fraction (%)")
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig('binned_PC_fraction.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/binned_PC_fraction.pdf')
 
 		fpFrac = np.zeros(np.shape(tceGrid))
 		fpFrac[tceGrid>minTcePerCell] = fpGrid[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell]
 		drawHeatMap(np.round(100*fpFrac), (15,15), cellPeriod, cellMes, colorBarLabel="FP Fraction (%)", nData = tceGrid)           
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig("fpEffFPFrac.eps",bbox_inches='tight')
+		plt.savefig(os.getcwd() + "/GKbaseline/fpEffFPFrac.pdf",bbox_inches='tight')
 		plt.title("Inverted/Scrambled FP Fraction (%)")
-		plt.savefig('binned_FP_fraction.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/binned_FP_fraction.pdf')
 
 
 	# Prepare the data for the call to emcee to do the Bayesian inference.
@@ -422,7 +430,7 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 	nTce = tceGrid.flatten()
 
 	# convert to homogeneous coordinates on unit square [0,1]
-	cellX, cellY = funcModels.normalizeRange(cellPeriod, cellMes, [periodMin, periodMax], [mesMin, mesMax])
+	cellX, cellY = funcModels.normalizeRange(cellPeriod, cellMes, [pmin, pmax], [mesmin, mesmax])
 	gridShape = np.shape(cellX)
 	dx = 1./gridShape[0]
 	dy = 1./gridShape[1]
@@ -528,15 +536,15 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		plt.figure(figsize=(10,5))
 		for i in range(0,ndim):
 			plt.subplot(ndim,1,i+1)
-			plt.plot(np.transpose(sampler.chain[:, :, i]), color="k", alpha=0.1)
+			plt.plot(np.transpose(sampler.chain[:, :, i]), color="k", alpha=0.1, rasterized = True)
 			plt.ylabel(modelLabels[i])
-			plt.savefig('fit_chains.pdf')
+			plt.savefig(os.getcwd() + '/GKbaseline/fit_chains.pdf')
 
 
 	modelLabels = funcModels.getModelLabels(model)
 	if plots == True:
 		fig = corner.corner(samples, labels = modelLabels, label_kwargs = {"fontsize": 32}, truths = fitTheta)
-		plt.savefig("fpEffCorner.pdf",bbox_inches='tight')
+		plt.savefig(os.getcwd() + "/GKbaseline/fpEffCorner.pdf",bbox_inches='tight')
 
 
 	# We test the result by reconstructing the distribution of FPs and % of FPs using binomial-distributed random numbers, to see if they match the actual data.
@@ -554,7 +562,7 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		plt.title('reconstructed FPs from the fit')
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig('reconstructed_FPs.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/reconstructed_FPs.pdf')
 
 		fitFrac = np.zeros(np.shape(tceGrid))
 		fitFrac[tceGrid>minTcePerCell] = fitGrid[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell]
@@ -562,14 +570,14 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		plt.title('reconstructed FP rate from the fit')
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig('reconstructed_FP_rate.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/reconstructed_FP_rate.pdf')
 
 
 	fitGrid = np.zeros([np.shape(tceGrid)[0],np.shape(tceGrid)[1],nfits])
 	sidx = [0]*nfits
-	progress = FloatProgress(min=0, max=nfits)
-	if verbose == True:
-		display(progress)
+	# progress = FloatProgress(min=0, max=nfits)
+	# if verbose == True:
+	# 	display(progress)
 
 
 	for f in range(nfits):
@@ -582,7 +590,7 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 				if rm > 1:
 					rm = 1
 				fitGrid[(p,m,f)] = np.random.binomial(tceGrid[(p,m)], rm, 1)
-		progress.value += 1
+		# progress.value += 1
 		
 	meanFit = np.mean(fitGrid, 2)
 	stdFit = np.std(fitGrid, 2)
@@ -592,7 +600,7 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		plt.title("Mean reconstructed Observed FPs from the fit")
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig('mean_reconstructed_obs_FPs.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/mean_reconstructed_obs_FPs.pdf')
 
 	fitFracMean = np.zeros(np.shape(tceGrid))
 	fitFracMean[tceGrid>minTcePerCell] = meanFit[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell]
@@ -601,9 +609,9 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		drawHeatMap(np.round(100*fitFracMean), (15,15), cellPeriod, cellMes, nData = tceGrid, colorBarLabel="Mean FP %")           
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig("fpEffMean.eps",bbox_inches='tight')
+		plt.savefig(os.getcwd() + "/GKbaseline/fpEffMean.pdf",bbox_inches='tight')
 		plt.title("Mean reconstructed Observed FP rate from the fit")
-		plt.savefig('mean_reconstructed_obs_FP_rate.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/mean_reconstructed_obs_FP_rate.pdf')
 
 	stdFrac = np.zeros(np.shape(tceGrid))
 	stdFrac[tceGrid>minTcePerCell] = stdFit[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell]
@@ -612,9 +620,9 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		drawHeatMap(np.round(100*stdFrac), (15,15), cellPeriod, cellMes, nData = tceGrid, colorBarLabel="Mean FP %")           
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig("fpEffStd.eps",bbox_inches='tight')
+		plt.savefig(os.getcwd() + "/GKbaseline/fpEffStd.pdf",bbox_inches='tight')
 		plt.title("Standard deviation of the reconstructed Observed FP rate from the fit")
-		plt.savefig('stdev_reconstructed_obs_FP_rate.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/stdev_reconstructed_obs_FP_rate.pdf')
 
 
 	fitDiff = fitFracMean - fpFrac
@@ -626,15 +634,15 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		plt.title("Residual from mean")
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig('fit_residual_MES_P.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/fit_residual_MES_P.pdf')
 
 		drawHeatMap(np.round(fitDiffNorm, 2), (15,15), cellPeriod, cellMes, nData = tceGrid, 
 					colorBarLabel="Mean Residual (in standard deviations)", forceInt = False) 
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
-		plt.savefig("fpEffMeanResid.eps",bbox_inches='tight')
+		plt.savefig(os.getcwd() + "/GKbaseline/fpEffMeanResid.pdf",bbox_inches='tight')
 		plt.title("Residual from mean (in standard deviations)")
-		plt.savefig('fit_residual_stdev.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/fit_residual_stdev.pdf')
 
 
 	np.median(fitDiffNorm.flatten()[nTce > 0])
@@ -670,7 +678,7 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		ax.clabel(CS, inline=1, fontsize=10)
 		plt.xlabel("period")
 		plt.ylabel("MES")
-		plt.savefig('model_contours_compare.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/model_contours_compare.pdf')
 
 
 
@@ -679,13 +687,13 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		CS = ax.contour(cellPeriod, cellMes, Z, colors='k')
 		ax.clabel(CS, inline=1, fontsize=18)
 		scf = ax.scatter(cellPeriod[tceGrid>0], cellMes[tceGrid>0], cmap="cividis", c=fpFrac[tceGrid>0], s=5*tceGrid[tceGrid>0], alpha = 0.5)
-		plt.xlabel("period", fontSize = 24)
-		plt.ylabel("MES", fontSize = 24)
+		plt.xlabel("period", fontsize = 24)
+		plt.ylabel("MES", fontsize = 24)
 		cbh = plt.colorbar(scf)
-		cbh.ax.set_ylabel("Measured Rate", fontSize = 24)
+		cbh.ax.set_ylabel("Measured Rate", fontsize = 24)
 		plt.tick_params(labelsize = 16)
 		plt.title("Vetting Effectiveness.  Size of marker = # of TCEs in cell")
-		plt.savefig("fpEffContours.pdf",bbox_inches='tight')
+		plt.savefig(os.getcwd() + "/GKbaseline/fpEffContours.pdf",bbox_inches='tight')
 
 
 
@@ -711,7 +719,7 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		plt.xlabel("period")
 		plt.ylabel("MES")
 
-		plt.savefig('vetting_fit_contours.pdf')
+		plt.savefig(os.getcwd() + '/GKbaseline/vetting_fit_contours.pdf')
 
 
 
@@ -750,8 +758,8 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 		print(mctIndex)
 	modelComparisonTable["medianMCMCTheta"][mctIndex] = fitTheta
 	modelComparisonTable["maxLikelihoodTheta"][mctIndex] = maxLikelihoodResult
-	modelComparisonTable["periodRange"][mctIndex] = [periodMin, periodMax]
-	modelComparisonTable["mesRange"][mctIndex] = [mesMin, mesMax]
+	modelComparisonTable["periodRange"][mctIndex] = [pmin, pmax]
+	modelComparisonTable["mesRange"][mctIndex] = [mesmin, mesmax]
 	modelComparisonTable.to_pickle(fname)
 
 	return
@@ -770,7 +778,7 @@ def main(argv):
 		plots = strtobool(str(arguments[1][1]))
 		verbose = strtobool(str(arguments[2][1]))
 		savepath = arguments[3][1] + '/'
-		spt = arguments[4][1].lower()
+		spt = arguments[4][1].upper()
 		pmin = float(arguments[5][1])
 		pmax = float(arguments[6][1])
 		rpmin = float(arguments[7][1])
@@ -778,8 +786,8 @@ def main(argv):
 		nwalkers = int(arguments[9][1])
 		nsteps = int(arguments[10][1])
 		nfits = int(arguments[11][1])
-		mesMin = 7
-		mesMax = 30
+		mesmin = 7
+		mesmax = 30
 
 	except:
 		print('No inputs given, running with default settings: model = rotatedLogisticX0, plots = True, verbose = True, savepath = current working directory, spt = \'GK\', min. period = 1 d, max period = 400 d, min Rp = 0.5 Re, max Rp = 15 Re, nwalkers = 100, nsteps = 10000, nfits = 100. The code always uses MES values from 7-30.')
@@ -788,19 +796,19 @@ def main(argv):
 		plots = True
 		verbose = True
 		savepath = os.getcwd() + '/'
-		spt = 'GK'.lower()
+		spt = 'GK'.upper()
 		pmin = 1
 		pmax = 400
 		rpmin = 0.5
 		rpmax = 15
-		mesMin = 7
-		mesMax = 30
+		mesmin = 7
+		mesmax = 30
 		nwalkers = 100
 		nsteps = 10000
 		nfits = 100
 
 	# check the spectral type inputs are valid
-	test_spt = [s not in 'fgkm' for s in spt]
+	test_spt = [s not in 'FGKM' for s in spt]
 
 	# if they are not, throw an error and exit
 	if any([s == True for s in test_spt]):
@@ -819,9 +827,9 @@ def main(argv):
 	# print out the running statement 
 	print('Assessing FP effectiveness for reliability with the following settings: model = {}, plots = {}, verbose = {}, savepath = {}, spectral types = {}, \
 		P min = {} d, P max = {} d, Rp min = {} Re, Rp max = {} Re, MES min = {}, MES max = {}, nwalkers = {}, nsteps = {}, nfits = {}'.\
-		format(model, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, mesMin, mesMax, nwalkers, nsteps, nfits))
+		format(model, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, mesmin, mesmax, nwalkers, nsteps, nfits))
 
-	calcBinomialFPEffectiveness(model = model, path = savepath, stellarType = spt, rpmin = rpmin, rpmax = rpmax, pmin = pmin, pmax = pmax, mesmin = mesMin, mesmax = mesMax, verbose = verbose, plots = plots, nwalkers = nwalkers, nsteps = nsteps, nfits = nfits)
+	calcBinomialFPEffectiveness(model = model, path = savepath, stellarType = spt, rpmin = rpmin, rpmax = rpmax, pmin = pmin, pmax = pmax, mesmin = mesmin, mesmax = mesmax, verbose = verbose, plots = plots, nwalkers = nwalkers, nsteps = nsteps, nfits = nfits)
 	return
 
 if __name__ == '__main__':

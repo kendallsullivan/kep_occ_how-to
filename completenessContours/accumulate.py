@@ -5,8 +5,9 @@ from astropy.io import fits
 import numpy as np
 
 # prefix = "detCompOut"
-prefix = "out__"
+prefix = os.getcwd() + "/completenessContours/out__"
 filelist = glob.glob(prefix + '[0-9][0-9][0-9][0-9].fits.gz')
+print(prefix)
 
 # open first fits file to get the structure
 hdulist = fits.open(filelist[0])
@@ -34,7 +35,7 @@ newcol = fits.Column(name='kiclist', format='J', array=cumulative_kiclist)
 cols = fits.ColDefs([newcol])
 tbhdu = fits.BinTableHDU.from_columns(cols)
 hdulist.append(tbhdu)
-hdulist.writeto(output_filename, clobber=True)
+hdulist.writeto(output_filename)
 f_in = open(output_filename, 'rb')
 f_out = gzip.open(output_filename + '.gz', 'wb')
 f_out.writelines(f_in)

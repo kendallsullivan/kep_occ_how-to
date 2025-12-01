@@ -22,7 +22,7 @@ old_age = 19.5 #Gyr
 vettingModel = 'logisticX0xRotatedLogisticY02'
 pmin = 1 # days
 pmax = 400 # days 
-rpmin = 0.5 # Rearth
+rpmin = 1 # Rearth
 rpmax = 15 # Rearth
 vetNwalkers = 200
 vetNsteps = 5000
@@ -41,42 +41,45 @@ fpRateModel = 'rotatedLogisticX0'
 
 # run the MCMC with KDE
 prefix = 'sboot_'
-catName = '' # should be the full path to the file
+catName = os.getcwd() + "/GKbaseline/koiCatalogs/dr25_{}_PCs.csv".format(spt) # should be the full path to the file
 period_gridsize = 101
 rp_gridsize = 101
-niter = 100
+niter = 1000
 
 
 #create the stellar catalog
 # stellar_cat_options = 'i:v:s:t:y:o:' #plots y/n, verbose y/n, savepath for files, spectral types to include, lower age limit, upper age limit
-subprocess.run('python', 'createStellarCatalogs.py -i {} -v {} -s {} -t {} -y {} -o {}'.format(plots, verbose, savepath, spt, young_age, old_age))
+#os.system('python createStellarCatalogs.py -i {} -v {} -s {} -t {} -y {} -o {}'.format(plots, verbose, savepath, spt, young_age, old_age))
 
 
 # calculate the vetting completeness
 # vetting_completeness_options = 'm:i:v:s:t:p:P:r:R:n:N:' #model name, plots y/n, verbose y/n, savepath for files, spectral types to include, period min, period max, rp min, rp max, nwalkers, nsteps
-subprocess.run('python', 'GKbaseline/binomialVettingCompleteness.py -m {} -i {} -v {} -s {} -t {} -p {} -P {} -r {} -R {} -n {} -N {}'.format(vettingModel, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, vetNwalkers, vetNsteps))
+#os.system('cd GKbaseline')
+#os.system('python GKbaseline/binomialVettingCompleteness.py -m {} -i {} -v {} -s {} -t {} -p {} -P {} -r {} -R {} -n {} -N {}'.format(vettingModel, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, vetNwalkers, vetNsteps))
+#os.system('cd ..')
 
 
 #calculate the composite completeness
 #completeness_options = 'm:s:t:p:P:r:R:c:'# model:savepath:spt:pmin:pmax:rpmin:rpmax:ncores
-subprocess.run('python', 'calc_composite_completeness.py - {} -s {} -t {} -p {} -P {} -r {} -R {} -c {}'.format(vettingModel, savepath, spt, pmin, pmax, rpmin, rpmax, ncores))
+# os.system('python calc_composite_completeness.py - {} -s {} -t {} -p {} -P {} -r {} -R {} -c {}'.format(vettingModel, savepath, spt, pmin, pmax, rpmin, rpmax, ncores))
 
 
 # calculate the FP effectiveness
 #FP_eff_options = 'm:i:v:s:t:p:P:r:R:n:N:f:' #model name, plots y/n, verbose y/n, savepath for files, spectral types to include, period min, period max, rp min, rp max, nwalkers, nsteps, nfits
-subprocess.run('python', 'GKbaseline/binomialFPEffectiveness.py -m {} -i {} -v {} -s {} -t {} -p {} -P {} -r {} -R {} -n {} -N {} -f {}'.format(fpEffModel, plots, verbose, savepath, spt, pmin,pmax, rpmin, rpmax, FPNwalkers, FPNsteps, FPNfits)
+# os.system('cd GKbaseline')
+# os.system('python GKbaseline/binomialFPEffectiveness.py -m {} -i {} -v {} -s {} -t {} -p {} -P {} -r {} -R {} -n {} -N {} -f {}'.format(fpEffModel, plots, verbose, savepath, spt, pmin,pmax, rpmin, rpmax, FPNwalkers, FPNsteps, FPNfits))
 
 
 # calculate the FP rate
 #FP_rate_options = 'm:i:v:s:t:p:P:r:R:n:N:f:' #model name, plots y/n, verbose y/n, savepath for files, spectral types to include, period min, period max, rp min, rp max, nwalkers, nsteps, nfits
-subprocess.run('python', 'GKbaseline/binomialObsFPRate.py -m {} -i {} -v {} -s {} -t {} -p {} -P {} -r {} -R {} -n {} -N {} -f {}'.format(fpRateModel, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, FPNwalkers, FPNsteps, FPNfits)))
+#os.system('python GKbaseline/binomialObsFPRate.py -m {} -i {} -v {} -s {} -t {} -p {} -P {} -r {} -R {} -n {} -N {} -f {}'.format(fpRateModel, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, FPNwalkers, FPNsteps, FPNfits))
 
 
 # make the planet catalog
 # planet_options = 'E:F:i:v:t:p:P:r:R:' #model name for FP Eff, model name for FP Rate, plots y/n, verbose y/n, spt range, pmin, pmax, rpmin, rpmax
-subprocess.run('python', 'GKbaseline/makePlanetInput.py -E {} -F {} -i {} -v {} -s {} -p {} -P {} -r {} -R {}'.format(fpEffModel, fpRateModel, plots, verbose, spt, pmin, pmax, rpmin, rpmax))
+os.system('python GKbaseline/makePlanetInput.py -E {} -F {} -i {} -v {} -s {} -p {} -P {} -r {} -R {}'.format(fpEffModel, fpRateModel, plots, verbose, spt, pmin, pmax, rpmin, rpmax))
 
-
+# os.system('cd ..')
 # Do the KDE MCMC
 '''
 command-line order for sboot
@@ -87,6 +90,7 @@ rpmin, rpmax, rp_grid = sys.argv[6], sys.argv[7], sys.argv[8]
 niter = sys.argv[9]
 '''
 
-subprocess.run('python', 'par_sboot_shuffle.py {} {} {} {} {} {} {} {} {}'.format(prefix, catName, pmin, pmax, period_gridsize, rpmin, rpmax, rp_gridsize, niter))
+os.system('python par_sboot_shuffle.py {} {} {} {} {} {} {} {} {}'.format(prefix, catName, pmin, pmax, period_gridsize, rpmin, rpmax, rp_gridsize, niter))
+
 
 
