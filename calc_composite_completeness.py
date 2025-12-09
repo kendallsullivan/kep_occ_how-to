@@ -8,6 +8,8 @@ import multiprocessing as mp
 import subprocess
 sys.path.insert(0, os.getcwd() + '/completenessContours')
 import compute_num_completeness_mproc as mproc
+from setuptools._distutils.util import strtobool
+
 
 ''' 
 Instructions in Steve's readme for a single run:
@@ -34,20 +36,20 @@ def caclulate_composite_completeness(vetpath, starpath, path, stellarType = 'GK'
 		model = 'logisticX0xRotatedLogisticY02'):
 
 	# change to the correct directory (i.e., the completenessContours directory) from the CWD
-	subprocess.run(['cd', vetpath])
+	# subprocess.run(['cd', vetpath])
 
 	# instantiate the parallelization
 	with mp.Pool() as pool:
 		#then run on however many cores using the symtax in compute_num_completeness_mproc.py
 		out = [pool.apply_async(mproc.nas_multi_grid_dr25, \
 			args = (k, ncores, pmin, pmax, pgrid, rpmin, rpmax, rpgrid, '{}/dr25_stellar_supp_gaia_clean_{}.txt'.format(starpath, stellarType), \
-			vetpath, path + '/GKbaseline/vetCompletenessTable.pkl'.format(path), model, '{}/out'.format(vetpath))) for k in range(ncores)]
+			path + 'completenessContours/' , path + '/GKbaseline/vetCompletenessTable.pkl', model, '{}/out'.format(vetpath))) for k in range(ncores)]
 
 		# get the results
 		a = [o.get() for o in out]
 
 	# go back to the initial directory
-	subprocess.run(['cd', path])
+	# subprocess.run(['cd', path])
 
 	# return 
 	return
@@ -56,7 +58,7 @@ def cleanup(vetpath, stellarType = 'gk'):
 
 	# this is purely to clean up files (accumulate.py) and then rename them so they work with the next step.
 	subprocess.run(['python', vetpath + '/accumulate.py'])
-	subprocess.run(['mv', vetpath + '/out.fits.gz', vetpath + '/out_sc0_{}_baseline.fits.gz'.format(stellarType,upper())])
+	subprocess.run(['mv', vetpath + '/out.fits.gz', vetpath + '/out_sc0_{}_baseline.fits.gz'.format(stellarType.upper())])
 
 	return
 
@@ -95,7 +97,7 @@ def main(argv):
 		ncores = os.cpu_count()
 
 	# check the spectral type inputs are valid
-	test_spt = [s not in 'fgkm' for s in spt]
+	test_spt = [s not in 'FGKM' for s in spt]
 
 	# if they are not, throw an error and exit
 	if any([s == True for s in test_spt]):
@@ -114,16 +116,16 @@ def main(argv):
 	rpgrid = 3001
  
 	starpath = path + "stellarCatalogs" 
-	vetpath = path + "completenessContours" 
+	vetpath = path + "completenessContours"
 
 
 	print('Calculating composite completeness using the following parameters: model = {}, path = {}, spt = {}, pmin = {}, pmax = {}, rpmin = {}, rpmax = {}, ncores = {}.'.format\
 		(model, path, spt, pmin, pmax, rpmin, rpmax, ncores))
 	#now we have the required files, calculate the completeness contours
-	caclulate_completeness_once(vetpath, starpath, path, stellarType, ncores, pmin, pmax, pgrid, rpmin, rpmax, rpgrid, model)
+	caclulate_composite_completeness(vetpath, starpath, path, spt, ncores, pmin, pmax, pgrid, rpmin, rpmax, rpgrid, model)
 
 	print('Cleaning up files. This might take a while.')
-	cleanup(vetpath, stellarType)
+	cleanup(vetpath, spt)
 
 if __name__ == '__main__':
 	main(sys.argv)

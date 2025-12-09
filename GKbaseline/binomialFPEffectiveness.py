@@ -403,19 +403,22 @@ def calcBinomialFPEffectiveness(model = "rotatedLogisticX0", path = os.getcwd(),
 
 
 	# Compute the PC and FC fractions in each cell to get a sense of what the fractions look like.  These are not used in the inference.
-	if plots == True:
-		minTcePerCell = 0
+	minTcePerCell = 0
 
-		pcFrac = np.zeros(np.shape(tceGrid))
-		pcFrac[tceGrid>minTcePerCell] = pcGrid[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell]
+	pcFrac = np.zeros(np.shape(tceGrid))
+	pcFrac[tceGrid>minTcePerCell] = pcGrid[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell]
+
+	if plots == True:
 		drawHeatMap(np.round(100*pcFrac), (10,10), cellPeriod, cellMes)           
 		plt.title("Inverted/Scrambled PC Fraction (%)")
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)
 		plt.savefig(os.getcwd() + '/GKbaseline/binned_PC_fraction.pdf')
 
-		fpFrac = np.zeros(np.shape(tceGrid))
-		fpFrac[tceGrid>minTcePerCell] = fpGrid[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell]
+	fpFrac = np.zeros(np.shape(tceGrid))
+	fpFrac[tceGrid>minTcePerCell] = fpGrid[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell]
+	
+	if plots == True:
 		drawHeatMap(np.round(100*fpFrac), (15,15), cellPeriod, cellMes, colorBarLabel="FP Fraction (%)", nData = tceGrid)           
 		plt.ylabel('MES', fontsize = 16)
 		plt.xlabel('Period', fontsize = 16)

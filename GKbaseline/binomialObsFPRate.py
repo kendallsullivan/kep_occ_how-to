@@ -757,7 +757,7 @@ def main(argv):
 
 
     # print out the running statement 
-    print('Assessing vetting completeness with the following settings: model = {}, plots = {}, verbose = {}, savepath = {}, spectral types = {}, \
+    print('Assessing FP rate with the following settings: model = {}, plots = {}, verbose = {}, savepath = {}, spectral types = {}, \
         P min = {} d, P max = {} d, Rp min = {} Re, Rp max = {} Re, MES min = {}, MES max = {}, nwalkers = {}, nsteps = {}, nfits = {}'.\
         format(model, plots, verbose, savepath, spt, pmin, pmax, rpmin, rpmax, mesmin, mesmax, nwalkers, nsteps, nfits))
 

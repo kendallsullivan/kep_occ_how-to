@@ -61,11 +61,15 @@ def nas_multi_grid_dr25(worker_id, n_workers, min_period, max_period,
         if np.mod(i, n_workers) == worker_id :
             curid = kiclist[i]
             # check if the star has an associated window function
-            windowfunc_filename = os.path.join(planet_metric_path,'kplr' + \
+            windowfunc_filename = os.path.join(planet_metric_path, 'window_onesig/', 'kplr' + \
                                   '{:09d}'.format(curid) + \
                                   '_dr25_window.fits')
             if not os.path.isfile(windowfunc_filename):
                 print("worker " + str(worker_id) + " skipping " + windowfunc_filename)
+                continue
+            try:
+                file = fits.getdata(windowfunc_filename)
+            except:
                 continue
             #  Add some new entries to each stellar entry in the dictionary that was created above
             usekiclist = np.append(usekiclist, curid)

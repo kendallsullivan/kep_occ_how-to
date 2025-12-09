@@ -348,7 +348,7 @@ class tps_planet_detection_metrics:
        CLASS FUNCTION CONTENTS:
        __init__ - initialization sets variable contents and reads in files
     """
-    def __init__(self, wanted_kic, filePath='', want_wf=True, want_osd=True):
+    def __init__(self, wanted_kic, filePath=os.getcwd() + '/completenessContours/', want_wf=True, want_osd=True):
         self.id = 0
         self.wf_data = []
         self.osd_data = []
@@ -359,7 +359,7 @@ class tps_planet_detection_metrics:
         self.id = wanted_kic
         # Get the window function data
         if want_wf:
-            windowfunc_filename = os.path.join(filePath,'kplr' + \
+            windowfunc_filename = os.path.join(filePath, 'window_onesig/', 'kplr' + \
                                   '{:09d}'.format(wanted_kic) + \
                                   windowfunc_suffix)
             hdulist_wf = fits.open(windowfunc_filename,mode='readonly')
@@ -372,7 +372,7 @@ class tps_planet_detection_metrics:
 
         # Get the one sigma depth function
         if want_osd:
-            onesigdepthfunc_filename = os.path.join(filePath,'kplr' + \
+            onesigdepthfunc_filename = os.path.join(filePath,'window_onesig/', 'kplr' + \
                                        '{:09d}'.format(wanted_kic) + \
                                        onesigdepthfunc_suffix)
             hdulist_osd = fits.open(onesigdepthfunc_filename,mode='readonly')
@@ -431,7 +431,7 @@ class kepler_detection_efficiency_model_data:
         final_detEffs - This is the function the end user will actually
                 use in order to get a DE model for any arbitary MES and period
     """
-    def __init__(self, filePath=''):
+    def __init__(self, filePath=os.getcwd() + '/completenessContours/'):
         self.lowPers = np.array([0.0])
         self.hghPers = np.array([0.0])
         self.midPers = np.array([0.0])

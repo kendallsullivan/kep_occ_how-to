@@ -378,7 +378,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.ylabel('Expected MES');
 		plt.xlabel('Period');
 
-		plt.savefig(savepath + '/TCEs_and_MES.pdf')
+		plt.savefig(savepath + '/GKbaseline/TCEs_and_MES.pdf')
 
 
 	# Bin the populations onto a grid.  The binned TCEs and PCs are the input to our MCMC analysis.
@@ -434,20 +434,20 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.xlabel('Period', fontsize = 16);
 		plt.savefig("vetCompNTCEs.pdf",bbox_inches='tight')
 		plt.title("All Injected TCEs");
-		plt.savefig(savepath + '/inj_TCEs.pdf')
+		plt.savefig(savepath + '/GKbaseline/inj_TCEs.pdf')
 
 
 		drawHeatMap(pcGrid, (15,15), cellPeriod, cellMes, colorBarLabel="# of PCs");
 		plt.title("Injected TCEs Dispositioned as PCs");
 		plt.ylabel('Expected MES', fontsize = 16);
 		plt.xlabel('Period', fontsize = 16);
-		plt.savefig(savepath + '/inj_TCE_PC.pdf')
+		plt.savefig(savepath + '/GKbaseline/inj_TCE_PC.pdf')
 
 		drawHeatMap(fpGrid, (15,15), cellPeriod, cellMes, colorBarLabel="# of FPs");
 		plt.title("Injected TCEs Dispositioned as FPs");
 		plt.ylabel('Expected MES', fontsize = 16);
 		plt.xlabel('Period', fontsize = 16);
-		plt.savefig(savepath + '/inj_TCE_FP.pdf')
+		plt.savefig(savepath + '/GKbaseline/inj_TCE_FP.pdf')
 
 
 
@@ -607,7 +607,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 			plt.subplot(ndim,1,i+1)
 			plt.plot(np.transpose(sampler.chain[:, :, i]), color="k", alpha=0.1, rasterized = True);
 			plt.ylabel(modelLabels[i]);
-		plt.savefig(savepath + '/chains_mcmc.pdf')
+		plt.savefig(savepath + '/GKbaseline/chains_mcmc.pdf')
 		
 
 	modelLabels = funcModels.getModelLabels(model)
@@ -639,7 +639,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.title("Simulated TCEs Dispositioned as PCs");
 		plt.ylabel('Expected MES');
 		plt.xlabel('Period');
-		plt.savefig(savepath + '/simulatedTCEs.pdf')
+		plt.savefig(savepath + '/GKbaseline/simulatedTCEs.pdf')
 
 	fitFrac = np.zeros(np.shape(tceGrid))
 	fitFrac[tceGrid>minTcePerCell] = fitGrid[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell];
@@ -648,7 +648,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.title("Simulated % of TCEs Dispositioned as PCs");
 		plt.ylabel('Expected MES');
 		plt.xlabel('Period');
-		plt.savefig(savepath + '/simulatedTCEs_percent.pdf')
+		plt.savefig(savepath + '/GKbaseline/simulatedTCEs_percent.pdf')
 
 
 	# Now do many realizations, and subtract the average from the observed to look for systematic differences.
@@ -682,7 +682,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.title("Mean Number of Simulated TCEs Dispositioned as PCs");
 		plt.ylabel('Expected MES');
 		plt.xlabel('Period');
-		plt.savefig(savepath + '/simulatedTCEs_ensemble.pdf')
+		plt.savefig(savepath + '/GKbaseline/simulatedTCEs_ensemble.pdf')
 
 	fitFracMean = np.zeros(np.shape(tceGrid))
 	fitFracMean[tceGrid>minTcePerCell] = meanFit[tceGrid>minTcePerCell]/tceGrid[tceGrid>minTcePerCell];
@@ -693,7 +693,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.xlabel('Period', fontsize = 16);
 		plt.savefig("vetCompMean.pdf",bbox_inches='tight')
 		plt.title("Mean Simulated % of TCEs Dispositioned as PCs");
-		plt.savefig(savepath + '/simulatedTCEs_ensemble_percent.pdf')
+		plt.savefig(savepath + '/GKbaseline/simulatedTCEs_ensemble_percent.pdf')
 
 
 	fitFracStd = np.zeros(np.shape(tceGrid))
@@ -704,7 +704,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.xlabel('Period', fontsize = 16);
 		plt.savefig("vetCompStd.pdf",bbox_inches='tight')
 		plt.title("Standard Deviation of the Simulated % of TCEs Dispositioned as PCs");
-		plt.savefig(savepath + '/simulatedTCEs_ensemble_stdev.pdf')
+		plt.savefig(savepath + '/GKbaseline/simulatedTCEs_ensemble_stdev.pdf')
 
 
 
@@ -717,7 +717,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.title("Residual from mean");
 		plt.ylabel('Expected MES');
 		plt.xlabel('Period');
-		plt.savefig(savepath + '/MES_residual_ensemble_percent.pdf')
+		plt.savefig(savepath + '/GKbaseline/MES_residual_ensemble_percent.pdf')
 
 		drawHeatMap(np.round(fitDiffNorm), (15,15), cellPeriod, cellMes, nData = tceGrid, 
 					colorBarLabel=r"Mean Residual ($\sigma$)"); 
@@ -725,7 +725,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.xlabel('Period', fontsize = 16);
 		plt.savefig("vetCompMeanResid.pdf",bbox_inches='tight')
 		plt.title("Residual from mean (standard deviations)");
-		plt.savefig(savepath + '/MES_residual_ensemble_stdev.pdf')
+		plt.savefig(savepath + '/GKbaseline/MES_residual_ensemble_stdev.pdf')
 
 
 
@@ -757,7 +757,7 @@ def vettingCompleteness(model ='logisticX0xRotatedLogisticY02', plots = True, ve
 		plt.xlabel("period");
 		plt.ylabel("Expected MES");
 
-		plt.savefig(savepath + '/model_test_plot.pdf')
+		plt.savefig(savepath + '/GKbaseline/model_test_plot.pdf')
 
 		fig, ax = plt.subplots(figsize=(15,10));
 		CS = ax.contour(cellPeriod, cellMes, Z, colors='k', levels = [0, .1, .2, .3, .4, .5, .6, .7, .8, .9, .95, .96, .97, .98, .99]);
