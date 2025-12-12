@@ -795,7 +795,7 @@ def main(argv):
 	except:
 		print('No inputs given, running with default settings: model = rotatedLogisticX0, plots = True, verbose = True, savepath = current working directory, spt = \'GK\', min. period = 1 d, max period = 400 d, min Rp = 0.5 Re, max Rp = 15 Re, nwalkers = 100, nsteps = 10000, nfits = 100. The code always uses MES values from 7-30.')
 	   
-		model = 'rotatedLogisticX0'
+		model = 'rotatedLogisticY'
 		plots = True
 		verbose = True
 		savepath = os.getcwd() + '/'

@@ -58,7 +58,7 @@ def cleanup(vetpath, stellarType = 'gk'):
 
 	# this is purely to clean up files (accumulate.py) and then rename them so they work with the next step.
 	subprocess.run(['python', vetpath + '/accumulate.py'])
-	subprocess.run(['mv', vetpath + '/out.fits.gz', vetpath + '/out_sc0_{}_baseline.fits.gz'.format(stellarType.upper())])
+	subprocess.run(['mv', vetpath + '/out__.fits.gz', vetpath + '/out_sc0_{}_baseline.fits.gz'.format(stellarType.upper())])
 
 	return
 

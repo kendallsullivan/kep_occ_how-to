@@ -3,7 +3,7 @@ from astropy.table import Table
 import os
 
 
-keptable = Table.read('../../stellarCatalogs/dr25_stellar_supp_gaia_clean_GK.txt', format = 'ascii.csv')
+keptable = Table.read('../../stellarCatalogs/dr25_stellar_supp_gaia_clean_FGK.txt', format = 'ascii.csv')
 
 kicnumbers = keptable['kepid']
 

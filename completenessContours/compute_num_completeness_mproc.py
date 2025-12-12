@@ -69,6 +69,9 @@ def nas_multi_grid_dr25(worker_id, n_workers, min_period, max_period,
                 continue
             try:
                 file = fits.getdata(windowfunc_filename)
+                file2 = fits.getdata(os.path.join(planet_metric_path, 'window_onesig/', 'kplr' + \
+                                  '{:09d}'.format(curid) + \
+                                  '_dr25_onesigdepth.fits'))
             except:
                 continue
             #  Add some new entries to each stellar entry in the dictionary that was created above
